@@ -1,0 +1,9 @@
+# 忽略所有 node_modules 目录
+node_modules/
+
+# 如果需要也可以添加其他常见忽略项（可选）
+.DS_Store
+.env
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

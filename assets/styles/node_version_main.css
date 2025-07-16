@@ -1,0 +1,95 @@
+/* 基本容器样式 */
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    max-width: 800px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+/* 每个版块样式 */
+.section {
+    margin-bottom: 16px;
+    padding: 8px;
+    background-color: var(--vscode-editorSuggestWidget-background);
+    border-radius: 4px;
+    gap: 10px;
+    display: flex;
+    flex-direction: column;
+}
+
+.title-bar {
+    display: flex;
+}
+
+/* Node 版本按钮容器样式 */
+.node-version-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: left;
+    max-height: 300px;
+    overflow: auto;
+}
+
+#nvm-list-available {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* 优化表格容器样式 */
+.table-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: auto;
+}
+
+/* 统一表格样式 */
+#available-versions-table {
+    border-collapse: collapse;
+}
+
+/* 固定表头 */
+#available-versions-table thead {
+    z-index: 10;
+    position: sticky;
+    top: 0;
+    /* 使用阴影模拟顶部边框，因为滚动时候，顶部边框会跑 */
+    box-shadow: 0 -1px 0 var(--vscode-editor-lineHighlightBorder);
+}
+
+/*单元格*/
+th,
+td {
+    border: 1px solid var(--vscode-editor-lineHighlightBorder);
+    text-align: center;
+    color: var(--vscode-foreground);
+    display: table-cell;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    height: 40px;
+}
+
+th {
+    background-color: var(--vscode-button-secondaryBackground);
+    font-weight: bold;
+}
+
+/* 链接样式 */
+a {
+    color: var(--vscode-textLink-foreground);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+a:hover {
+    text-decoration: underline;
+    color: var(--vscode-textLink-activeForeground);
+}

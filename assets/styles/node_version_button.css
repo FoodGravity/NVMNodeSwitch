@@ -1,0 +1,66 @@
+/* 基础按钮样式 */
+.node-version-button {
+    min-height: 36px;
+    padding: 0 4px 0 12px;
+    position: relative;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 2px solid var(--vscode-button-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    gap: 4px;
+}
+
+.node-version-button.table {
+    background-color: var(--vscode-editor-background);
+    color: var(--vscode-descriptionForeground);
+    width: 100%;
+    height: 100%;
+}
+
+/* 按钮状态变体 */
+.node-version-button.installed {
+    background-color: var(--vscode-button-secondaryBackground);
+    color: var(--vscode-button-secondaryForeground);
+}
+
+.node-version-button.current {
+    background-color: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+    font-weight: bold;
+}
+
+.node-version-button.downloading {
+    background-color: var(--vscode-editorInfo-background);
+    color: var(--vscode-editorInfo-foreground);
+    border-color: color-mix(in srgb, var(--vscode-editorInfo-foreground) 30%, transparent);
+}
+
+.node-version-button.error {
+    background-color: var(--vscode-editorError-background);
+    color: var(--vscode-editorError-foreground);
+    border-color: color-mix(in srgb, var(--vscode-editorError-foreground) 30%, transparent);
+}
+
+/* 统一悬停效果 */
+.node-version-button:hover {
+    background-color: var(--vscode-list-hoverBackground);
+    color: var(--vscode-list-hoverForeground);
+    border-color: var(--vscode-list-hoverBackground);
+    border: 2px solid var(--vscode-button-hoverBackground);
+}
+
+.node-version-button.downloading:hover {
+    background-color: var(--vscode-editorInfo-background);
+    color: var(--vscode-editorInfo-foreground);
+    border-color: var(--vscode-editorInfo-foreground);
+}
+
+.node-version-button.error:hover {
+    background-color: var(--vscode-editorError-background);
+    color: var(--vscode-editorError-foreground);
+    border-color: var(--vscode-editorError-foreground);
+}

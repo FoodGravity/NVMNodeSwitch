@@ -1,0 +1,67 @@
+/* 图标样式 */
+.button-icon {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    animation: none;
+    padding: 0;
+    border-radius: 4px;
+    background-color: transparent;
+    color: currentColor;
+    transition: transform 0.2s;
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+}
+
+.button-icon.refresh {
+    background-color: var(--vscode-button-secondaryBackground);
+}
+
+.button-icon.refresh:hover {
+    background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+.button-icon.delete:hover {
+    background-color: color-mix(in srgb, var(--vscode-errorForeground) 70%, transparent);
+}
+
+.button-icon.refresh svg {
+    width: 14px;
+    height: 14px;
+}
+
+.button-icon svg {
+    stroke: var(--vscode-icon-foreground);
+    padding: 4px;
+    stroke: currentColor;
+    transition: transform 0.2s;
+}
+
+.button-icon.loading svg {
+    stroke: currentColor;
+    animation: spin 1s linear infinite;
+    transform-origin: center;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.create-button {
+    margin-left: auto;
+    padding: 4px 8px;
+    min-height: 0;
+}
+
+.button-icon.delete {
+    right: 28px; 
+}

@@ -1,0 +1,17 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "npm",
+            "script": "watch",
+            "problemMatcher": "$esbuild-watch",  // 使用 esbuild 专用问题匹配器
+            "label": "watch",
+            "detail": "启动文件监听",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "isBackground": true  // 声明为持续运行的后台任务
+        }
+    ]
+}

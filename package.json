@@ -1,0 +1,74 @@
+{
+  "name": "node-version-manager",
+  "displayName": "Node Version Manager",
+  "description": "根据.nvmrc自动切换Node版本，并提供版本管理及推荐功能",
+  "version": "0.1.9",
+  "publisher": "您的发布者名称",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/您的用户名/node-version-manager.git"
+  },
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "nodeVersionManager",
+          "title": "Node Version Manager",
+          "icon": "assets/icons/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "nodeVersionManager": [
+        {
+          "id": "nodeVersionManagerWebview",
+          "name": "Node 版本管理器",
+          "type": "webview"
+        }
+      ]
+    },
+    "commands": [],
+    "menus": {
+      "view/item/context": [],
+      "view/title": [],
+      "editor/context": []
+    }
+  },
+  "scripts": {
+    "Update package": "node update-version.js && node ./esbuild.js --production && vsce package",
+    "vscode:prepublish": "npm run package",
+    "compile": "node ./esbuild.js",
+    "watch": "node ./esbuild.js --watch",
+    "package": "node ./esbuild.js --production",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/iconv-lite": "^0.0.1",
+    "@types/mocha": "^10.0.7",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.80.0",
+    "@typescript-eslint/eslint-plugin": "^8.3.0",
+    "@typescript-eslint/parser": "^8.3.0",
+    "esbuild": "^0.23.0",
+    "eslint": "^9.9.1",
+    "typescript": "^5.5.3",
+    "vscode-test": "^1.6.1"
+  },
+  "dependencies": {
+    "iconv-lite": "^0.6.3"
+  }
+}

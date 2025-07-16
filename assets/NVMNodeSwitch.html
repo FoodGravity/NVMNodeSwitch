@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles/node_version_button.css">
+    <link rel="stylesheet" href="styles/node_version_main.css">
+    <link rel="stylesheet" href="styles/svg_buttons.css">
+    <meta charset="UTF-8">
+    <title>NVM 管理器</title>
+</head>
+
+<body>
+    <div class="container">
+        <div class="section" id="nvm-v">
+            <div class="title-bar">
+                <div>NVM版本:</div>
+                <div class="content-container">正在获取...</div>
+            </div>
+        </div>
+
+        <div id="nvmrc-check" class="section">
+            <div class="title-bar">
+                <div>.nvmrc文件检查:</div>
+                <div class="content-container">正在获取...</div>
+                <button id="create-nvmrc" class="node-version-button installed create-button"
+                    hidden=true>创建.nvmrc</button>
+            </div>
+        </div>
+
+        <div id="nvm-recommend" class="section">
+            <div class="title-bar">
+                <div>推荐 Node 版本:</div>
+                <div class="content-container">正在获取...</div>
+            </div>
+        </div>
+
+        <div id="nvm-list" class="section">
+            <div class="title-bar">
+                <div>已安装的 Node 版本:</div>
+            </div>
+            <div class="content-container node-version-buttons" id="installed-versions-container"></div>
+        </div>
+
+        <div id="nvm-list-available" class="section">
+            <div class="title-bar">
+                <div>可用的 Node 版本:</div>
+            </div>
+            <div class="content-container table-container" id="available-versions-container">
+            </div>
+        </div>
+    </div>
+    <script src="scripts/svg_buttons.js"></script>
+    <script src="scripts/node_version_button.js"></script>
+    <script src="scripts/node_version_manager.js"></script>
+</body>
+
+</html>
