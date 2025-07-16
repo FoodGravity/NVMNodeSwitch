@@ -1,5 +1,6 @@
 # 忽略所有 node_modules 目录
 node_modules/
+dist/
 
 # 如果需要也可以添加其他常见忽略项（可选）
 .DS_Store
