@@ -1,4 +1,4 @@
-# nvmNodeSwitch
+# NVMNodeSwitch​
 
 一个VSCode扩展，用于管理Node.js版本，支持以下功能：
 
