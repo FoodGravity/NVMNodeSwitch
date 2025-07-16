@@ -20,20 +20,16 @@ const nvm = {
 
 //命令转id
 function commandToId(command) {
-    //如果command包含
-    if (command.includes('nvm')) {
-        return command.replace(/\s+/g, '-');
-    } else if (command.includes('npmmirror') || command.includes('nodejs')) {
+    //如果command包含npmmirror或nodejs
+    if (command.includes('npmmirror') || command.includes('nodejs')) {
         return 'nvm-list-available';
     }
+    return command.replace(/\s+/g, '-');
 
 }
 //id转命令
 function idToCommand(id) {
     if (id === 'nvm-list-available') { return nvm.la; }
-    if (id === 'node-recommend') { return id; }
-    if (id === 'create-nvmrc') { return id; }
-    if (id === 'nvmrc-check') { return id; }
     return id.replace(/-/g, ' ');
 }
 // 公共变量
@@ -70,13 +66,13 @@ window.addEventListener('message', event => {
         availableVersions = parseAvailableVersions(message.data);
         renderNvmAvailable();
     }
-    else if (message.command === 'nvmrc-check') {
+    else if (message.command === 'nvmrc check') {
         renderNvmrcCheck(message.data);
     }
-    else if (message.command === 'node-recommend') {
+    else if (message.command === 'node recommend') {
         renderRecommendVersion(message.data);
     }
-    else if (message.command === 'create-nvmrc') {
+    else if (message.command === 'create nvmrc') {
         renderNvmrcCheck(message.data);
     }
 
@@ -86,9 +82,9 @@ window.addEventListener('message', event => {
 function renderNvmrcCheck(result) {
     const container = document.getElementById('nvmrc-check').querySelector('.content-container');
     const createBtn = document.getElementById('create-nvmrc');
+    if (result==='aaaaa') {
 
-    if (result.includes('.nvmrc found')) {
-        container.innerHTML = `已找到.nvmrc文件，推荐版本：${recommendedVersion}`;
+        container.innerHTML = `已找到.nvmrc文件，推荐版本：${result}`;
         createBtn.style.display = 'none';
     } else {
         container.innerHTML = '未找到.nvmrc文件';
@@ -179,7 +175,7 @@ function renderNvmV() {
             executeUpdateCommand(nvm.l);
             executeUpdateCommand(nvm.la);
             executeUpdateCommand('nvmrc check');
-            executeUpdateCommand('nvm recommend');
+            executeUpdateCommand('node recommend');
         } else if (nvmVersion === '') {
             setAllSectionsToNone(true);
             nvmVElement.querySelector('.content-container').innerHTML = '未安装，请下载安装: <a href="https://github.com/coreybutler/nvm-windows/releases" target="_blank">nvm-windows 官方下载</a>';
@@ -206,13 +202,9 @@ function renderNvmList() {
 // 3. 渲染可用版本列表
 function renderNvmAvailable() {
     console.log('渲染可用版本列表', availableVersions);
-    const elements = {
-        container: document.querySelector('.table-container'),
-        title: document.getElementById('available-versions-title')
-    };
-    if (elements.container) {
-        elements.container.innerHTML = '';
-
+    const elementsContainer = document.querySelector('.table-container');
+    if (elementsContainer) {
+        elementsContainer.innerHTML = '';
         if (availableVersions && Object.keys(availableVersions).length) {
             // 动态创建表格元素
             const table = document.createElement('table');
@@ -246,9 +238,9 @@ function renderNvmAvailable() {
 
             table.appendChild(thead);
             table.appendChild(tbody);
-            elements.container.appendChild(table);
+            elementsContainer.appendChild(table);
         } else {
-            elements.container.innerHTML = '没有可用的node版本';
+            elementsContainer.innerHTML = '没有可用的node版本';
         }
     }
 }
@@ -268,7 +260,7 @@ function setAllSectionsToNone(isNone) {
         }
     });
 }
-//设置提示语
+//设置加载语
 function setLoadingText(sectionId) {
     document.getElementById(sectionId).querySelector('.content-container').innerHTML = '正在获取...';
 }
@@ -296,8 +288,6 @@ function createAllRefreshButtons() {
         // 创建并配置刷新按钮
         const refreshBtn = createSvgButton('refresh', `refresh-${section.id}`);
         refreshBtn.classList.add('refresh');
-        refreshBtn.style.marginLeft = '8px';
-
         // 添加加载状态控制
         refreshBtn.stopLoading = () => {
             refreshBtn.classList.remove('loading');

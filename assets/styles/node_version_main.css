@@ -15,7 +15,7 @@
     padding: 8px;
     background-color: var(--vscode-editorSuggestWidget-background);
     border-radius: 4px;
-    gap: 10px;
+    gap: 8px;
     display: flex;
     flex-direction: column;
 }
@@ -23,13 +23,18 @@
 .title-bar {
     display: flex;
     align-items: center;
+    gap: 8px;
+}
+
+.segmentation {
+    flex: 1;
 }
 
 /* Node 版本按钮容器样式 */
 .node-version-buttons {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 4px;
     justify-content: left;
     max-height: 300px;
     overflow: auto;
@@ -62,6 +67,7 @@
     z-index: 10;
     position: sticky;
     top: 0;
+    height: 28px;
     /* 使用阴影模拟顶部边框，因为滚动时候，顶部边框会跑 */
     box-shadow: 0 -1px 0 var(--vscode-editor-lineHighlightBorder);
 }
@@ -75,7 +81,7 @@ td {
     display: table-cell;
     overflow: hidden;
     text-overflow: ellipsis;
-    height: 40px;
+    /* height: 40px; */
 }
 
 th {
@@ -104,8 +110,7 @@ a:hover {
     color: var(--vscode-dropdown-foreground);
     border: 1px solid var(--vscode-dropdown-border);
     border-radius: 4px;
-    min-height: 30px;
-    margin-left: auto;
+    min-height: 28px;
 }
 
 .source-selector option {

@@ -3758,12 +3758,12 @@ var NodeVersionManager = class {
       return this.handleHttpRequest(command);
     }
     switch (true) {
-      case command === "nvmrc-check":
-        return this.handleNvmrcCheck();
-      case command === "nvm-recommend":
-        return this.handleEngineRecommendation();
-      case command.includes("create-nvmrc"):
+      case command === "nvmrc check":
+        return this.handleNvmrcCheck(command);
+      case command.includes("create nvmrc"):
         return this.handleCreateNvmrc(command);
+      case command === "node recommend":
+        return this.handleEngineRecommendation(command);
     }
     return this.executeLocalCommand(command);
   }
@@ -3779,28 +3779,28 @@ var NodeVersionManager = class {
     }
   }
   /** 处理.nvmrc检查 */
-  handleNvmrcCheck() {
+  handleNvmrcCheck(command) {
     const workspaceRoot = vscode.workspace.rootPath || "";
     const nvmrcPath = path.join(workspaceRoot, ".nvmrc");
     const hasNvmrc = fs.existsSync(nvmrcPath);
     const content = hasNvmrc ? fs.readFileSync(nvmrcPath, "utf8").trim() : "";
-    this.postMessage("nvmrc-check", content);
+    this.postMessage(command, content);
   }
   /** 处理创建.nvmrc文件 */
   handleCreateNvmrc(command) {
-    const nvmVersion = command.split(" ")[1];
+    const nvmVersion = command.split(" ")[2];
     const workspaceRoot = vscode.workspace.rootPath || "";
     const nvmrcPath = path.join(workspaceRoot, ".nvmrc");
     fs.writeFileSync(nvmrcPath, nvmVersion);
-    this.postMessage("create-nvmrc", nvmVersion);
+    this.postMessage("create nvmrc", nvmVersion);
   }
   /** 处理引擎版本推荐 */
-  handleEngineRecommendation() {
+  handleEngineRecommendation(command) {
     const workspaceRoot = vscode.workspace.rootPath || "";
     const pkgPath = path.join(workspaceRoot, "package.json");
     const pkgJson = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
     const engineVersion = pkgJson.engines?.node?.match(/\d+\.\d+\.\d+/)?.[0];
-    this.postMessage("node-recommend", engineVersion);
+    this.postMessage(command, engineVersion);
   }
   /** 执行本地命令 */
   async executeLocalCommand(command) {

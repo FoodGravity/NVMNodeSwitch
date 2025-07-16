@@ -74,12 +74,13 @@ class NodeVersionManager {
 
         // 特殊命令处理
         switch (true) {
-            case command === 'nvmrc-check':
-                return this.handleNvmrcCheck();
-            case command === 'nvm-recommend':
-                return this.handleEngineRecommendation();
-            case command.includes('create-nvmrc'):
+            case command === 'nvmrc check':
+                return this.handleNvmrcCheck(command);
+            case command.includes('create nvmrc'):
                 return this.handleCreateNvmrc(command);
+            case command === 'node recommend':
+                return this.handleEngineRecommendation(command);
+
         }
 
         // 本地命令执行
@@ -99,28 +100,30 @@ class NodeVersionManager {
     }
 
     /** 处理.nvmrc检查 */
-    private handleNvmrcCheck() {
+    private handleNvmrcCheck(command: string) {
+
         const workspaceRoot = vscode.workspace.rootPath || '';
         const nvmrcPath = path.join(workspaceRoot, '.nvmrc');
         const hasNvmrc = fs.existsSync(nvmrcPath);
         const content = hasNvmrc ? fs.readFileSync(nvmrcPath, 'utf8').trim() : '';
-        this.postMessage('nvmrc-check', content);
+        this.postMessage(command, content);
     }
     /** 处理创建.nvmrc文件 */
     private handleCreateNvmrc(command: string) {
-        const nvmVersion = command.split(' ')[1];
+        const nvmVersion = command.split(' ')[2];
         const workspaceRoot = vscode.workspace.rootPath || '';
         const nvmrcPath = path.join(workspaceRoot, '.nvmrc');
         fs.writeFileSync(nvmrcPath, nvmVersion);
-        this.postMessage('create-nvmrc', nvmVersion);
+        this.postMessage('create nvmrc', nvmVersion);
     }
     /** 处理引擎版本推荐 */
-    private handleEngineRecommendation() {
+    private handleEngineRecommendation(command: string) {
+
         const workspaceRoot = vscode.workspace.rootPath || '';
         const pkgPath = path.join(workspaceRoot, 'package.json');
         const pkgJson = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
         const engineVersion = pkgJson.engines?.node?.match(/\d+\.\d+\.\d+/)?.[0];
-        this.postMessage('node-recommend', engineVersion);
+        this.postMessage(command, engineVersion);
     }
 
     /** 执行本地命令 */
@@ -133,14 +136,14 @@ class NodeVersionManager {
             });
 
             const { output, errorOutput, exitCode } = await this.processCommandOutput(child);
-            
+
             if (exitCode !== 0) {
                 throw new Error(`退出码: ${exitCode}\n${errorOutput || output}`);
             }
 
             this.postMessage(command, output);
             this.log(`命令执行完成: ${exe}`);
-        
+
         } catch (error) {
             this.handleError(command, error);
         }
@@ -161,7 +164,7 @@ class NodeVersionManager {
     private async processCommandOutput(child: ChildProcess) {
         let output = '';
         let errorOutput = '';
-        
+
         child.stdout?.on('data', (data: Buffer) => {
             const chunk = decodeOutput(data);
             output += chunk;

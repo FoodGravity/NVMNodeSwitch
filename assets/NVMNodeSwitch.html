@@ -15,14 +15,14 @@
         <div class="section" id="nvm-v">
             <div class="title-bar">
                 <div>NVM版本:</div>
-                <div class="content-container">正在获取...</div>
+                <div class="content-container segmentation">正在获取...</div>
             </div>
         </div>
 
         <div id="nvmrc-check" class="section">
             <div class="title-bar">
                 <div>.nvmrc文件检查:</div>
-                <div class="content-container">正在获取...</div>
+                <div class="content-container segmentation">正在获取...</div>
                 <button id="create-nvmrc" class="node-version-button installed nvmrc"
                     hidden=true>创建.nvmrc</button>
             </div>
@@ -31,20 +31,20 @@
         <div id="node-recommend" class="section">
             <div class="title-bar">
                 <div>推荐 Node 版本:</div>
-                <div class="content-container">正在获取...</div>
+                <div class="content-container segmentation">正在获取...</div>
             </div>
         </div>
 
         <div id="nvm-list" class="section">
             <div class="title-bar">
-                <div>已安装的 Node 版本:</div>
+                <div class="segmentation">已安装的 Node 版本:</div>
             </div>
             <div class="content-container node-version-buttons" id="installed-versions-container"></div>
         </div>
 
         <div id="nvm-list-available" class="section">
             <div class="title-bar">
-                <div>可用的 Node 版本:</div>
+                <div class="segmentation">可用的 Node 版本:</div>
                 <select id="version-source" class="source-selector">
                     <option value="nvm">从nvm获取</option>
                     <option value="nodejs">从nodejs获取</option>
