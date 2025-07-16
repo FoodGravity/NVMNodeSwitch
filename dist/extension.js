@@ -3795,7 +3795,7 @@ ${errorOutput || output}`);
           enableScripts: true,
           localResourceRoots: [vscode.Uri.file(path.join(this.context.extensionPath, "assets"))]
         };
-        const webviewPath = path.join(this.context.extensionPath, "assets", "node_version_manager.html");
+        const webviewPath = path.join(this.context.extensionPath, "assets", "NVMNodeSwitch.html");
         this.webviewView = webviewView;
         let htmlContent = fs.readFileSync(webviewPath, "utf8");
         htmlContent = htmlContent.replace(
