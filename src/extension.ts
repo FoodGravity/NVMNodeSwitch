@@ -1,8 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { spawn } from 'child_process';
-import { promisify } from 'util';
+import { spawn, ChildProcess } from 'child_process';
 import * as iconv from 'iconv-lite';
 
 
@@ -38,7 +37,7 @@ class NodeVersionManager {
     /// 构造函数，初始化扩展上下文和输出通道
     constructor(context: vscode.ExtensionContext) {
         this.context = context;
-        this.outputChannel = vscode.window.createOutputChannel('Node Version Manager');
+        this.outputChannel = vscode.window.createOutputChannel('NVMNode版本切换');
     }
 
     /** 激活扩展并打开Webview */
@@ -68,72 +67,119 @@ class NodeVersionManager {
 
     /** 执行Webview命令并返回结果 */
     private async executeCommand(command: string) {
+        // HTTP 请求处理
+        if (command.includes('npmmirror') || command.includes('nodejs')) {
+            return this.handleHttpRequest(command);
+        }
+
+        // 特殊命令处理
+        switch (true) {
+            case command === 'nvmrc-check':
+                return this.handleNvmrcCheck();
+            case command === 'nvm-recommend':
+                return this.handleEngineRecommendation();
+            case command.includes('create-nvmrc'):
+                return this.handleCreateNvmrc(command);
+        }
+
+        // 本地命令执行
+        return this.executeLocalCommand(command);
+    }
+
+    /** 处理HTTP请求 */
+    private async handleHttpRequest(command: string) {
+        const url = command.split(' ')[1];
+        try {
+            const response = await fetch(url);
+            const jsonData = await response.json();
+            this.postMessage(command, jsonData);
+        } catch (error: any) {
+            this.handleError(command, error);
+        }
+    }
+
+    /** 处理.nvmrc检查 */
+    private handleNvmrcCheck() {
+        const workspaceRoot = vscode.workspace.rootPath || '';
+        const nvmrcPath = path.join(workspaceRoot, '.nvmrc');
+        const hasNvmrc = fs.existsSync(nvmrcPath);
+        const content = hasNvmrc ? fs.readFileSync(nvmrcPath, 'utf8').trim() : '';
+        this.postMessage('nvmrc-check', content);
+    }
+    /** 处理创建.nvmrc文件 */
+    private handleCreateNvmrc(command: string) {
+        const nvmVersion = command.split(' ')[1];
+        const workspaceRoot = vscode.workspace.rootPath || '';
+        const nvmrcPath = path.join(workspaceRoot, '.nvmrc');
+        fs.writeFileSync(nvmrcPath, nvmVersion);
+        this.postMessage('create-nvmrc', nvmVersion);
+    }
+    /** 处理引擎版本推荐 */
+    private handleEngineRecommendation() {
+        const workspaceRoot = vscode.workspace.rootPath || '';
+        const pkgPath = path.join(workspaceRoot, 'package.json');
+        const pkgJson = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+        const engineVersion = pkgJson.engines?.node?.match(/\d+\.\d+\.\d+/)?.[0];
+        this.postMessage('node-recommend', engineVersion);
+    }
+
+    /** 执行本地命令 */
+    private async executeLocalCommand(command: string) {
         try {
             const exe = process.platform === 'win32' ? `cmd.exe /c ${command}` : command;
-            this.log(`执行命令: ${exe}`);
-            // 使用 spawn 执行命令
             const child = spawn(exe, {
                 shell: process.platform === 'win32' ? 'cmd.exe' : true,
                 stdio: ['pipe', 'pipe', 'pipe']
             });
 
-            let output = '';
-            let errorOutput = '';
-            // 使用 iconv-lite 解码输出
-            child.stdout.on('data', (data: Buffer) => {
-                const chunk = decodeOutput(data);
-                output += chunk;
-                this.log(`[输出]: ${chunk}`);
-            });
-            // 捕获错误输出
-            child.stderr.on('data', (data: Buffer) => {
-                const chunk = decodeOutput(data);
-                errorOutput += chunk;
-                this.log(`[错误]: ${chunk}`);
-            });
-            // 等待子进程结束
-            const exitCode = await new Promise<number>((resolve) => {
-                child.on('close', resolve);
-            });
-            // 确保输出和错误输出都被记录
-            if (errorOutput) { this.log(`命令错误: ${errorOutput}`); }
-            // 将结果发送到Webview
-            if (this.webviewView) {
-                const errorToSend = exitCode !== 0 ? (errorOutput || `命令执行失败，退出码: ${exitCode}`) : undefined;
-                this.webviewView.webview.postMessage({
-                    command,
-                    data: output,
-                    error: errorToSend
-                });
-            }
-            // 如果退出码不是0，抛出错误
-            if (exitCode === 0) {
-                this.log(`命令执行${exe}完成，退出码: ${exitCode}`);
-            } else {
-                this.log(`命令执行失败，退出码: ${exitCode}`);
-                throw new Error(`命令执行失败，退出码: ${exitCode}\n${errorOutput || output}`);
-            }
-            return output;
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : '未知错误';
-            this.log(`执行出错: ${errorMessage}`);
-            // 将错误信息发送到Webview
-            if (this.webviewView) {
-                this.webviewView.webview.postMessage({
-                    command,
-                    error: errorMessage
-                });
+            const { output, errorOutput, exitCode } = await this.processCommandOutput(child);
+            
+            if (exitCode !== 0) {
+                throw new Error(`退出码: ${exitCode}\n${errorOutput || output}`);
             }
 
-            throw error;
+            this.postMessage(command, output);
+            this.log(`命令执行完成: ${exe}`);
+        
+        } catch (error) {
+            this.handleError(command, error);
         }
     }
-
-    /** 辅助方法：获取Webview资源的URI */
-    private getWebviewUri(...pathSegments: string[]): string {
-        return this.webviewView?.webview.asWebviewUri(vscode.Uri.file(path.join(this.context.extensionPath, ...pathSegments))).toString() || '';
+    /** 统一消息发送方法 */
+    private postMessage(command: string, data: any, error?: string) {
+        this.webviewView?.webview.postMessage({ command, data, error });
     }
 
+    /** 统一错误处理方法 */
+    private handleError(command: string, error: Error | unknown) {
+        const errorMessage = error instanceof Error ? error.message : '未知错误';
+        this.log(`执行出错: ${errorMessage}`);
+        this.postMessage(command, null, errorMessage);
+    }
+
+    /** 处理命令输出 */
+    private async processCommandOutput(child: ChildProcess) {
+        let output = '';
+        let errorOutput = '';
+        
+        child.stdout?.on('data', (data: Buffer) => {
+            const chunk = decodeOutput(data);
+            output += chunk;
+            this.log(`[输出]: ${chunk}`);
+        });
+
+        child.stderr?.on('data', (data: Buffer) => {
+            const chunk = decodeOutput(data);
+            errorOutput += chunk;
+            this.log(`[错误]: ${chunk}`);
+        });
+
+        const exitCode = await new Promise<number>((resolve) => {
+            child.on('close', resolve);
+        });
+
+        return { output, errorOutput, exitCode };
+    }
     /** 打开Webview视图 */
     public openWebview() {
         const webviewViewProvider = {
@@ -142,10 +188,10 @@ class NodeVersionManager {
                     enableScripts: true,
                     localResourceRoots: [vscode.Uri.file(path.join(this.context.extensionPath, 'assets'))]
                 };
-    
+
                 const webviewPath = path.join(this.context.extensionPath, 'assets', 'NVMNodeSwitch.html');
                 this.webviewView = webviewView;
-    
+
                 // 读取HTML内容并替换资源路径
                 let htmlContent = fs.readFileSync(webviewPath, 'utf8');
                 // 替换资源路径为Webview可访问的URI

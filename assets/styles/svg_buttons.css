@@ -1,19 +1,24 @@
 /* 图标样式 */
 .button-icon {
+    cursor: pointer;
+
     width: 24px;
     height: 24px;
-    cursor: pointer;
-    animation: none;
     padding: 0;
-    border-radius: 4px;
+
     background-color: transparent;
     color: currentColor;
     transition: transform 0.2s;
+
     margin-left: auto;
     display: flex;
     align-items: center;
     justify-content: center;
+
     border: 0;
+    border-radius: 4px;
+
+    animation: none;
 }
 
 .button-icon.refresh {
@@ -54,14 +59,4 @@
     to {
         transform: rotate(360deg);
     }
-}
-
-.create-button {
-    margin-left: auto;
-    padding: 4px 8px;
-    min-height: 0;
-}
-
-.button-icon.delete {
-    right: 28px; 
 }

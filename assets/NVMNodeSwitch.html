@@ -23,12 +23,12 @@
             <div class="title-bar">
                 <div>.nvmrc文件检查:</div>
                 <div class="content-container">正在获取...</div>
-                <button id="create-nvmrc" class="node-version-button installed create-button"
+                <button id="create-nvmrc" class="node-version-button installed nvmrc"
                     hidden=true>创建.nvmrc</button>
             </div>
         </div>
 
-        <div id="nvm-recommend" class="section">
+        <div id="node-recommend" class="section">
             <div class="title-bar">
                 <div>推荐 Node 版本:</div>
                 <div class="content-container">正在获取...</div>
@@ -45,9 +45,14 @@
         <div id="nvm-list-available" class="section">
             <div class="title-bar">
                 <div>可用的 Node 版本:</div>
+                <select id="version-source" class="source-selector">
+                    <option value="nvm">从nvm获取</option>
+                    <option value="nodejs">从nodejs获取</option>
+                    <option value="npmmirror">从npmmirror获取</option>
+
+                </select>
             </div>
-            <div class="content-container table-container" id="available-versions-container">
-            </div>
+            <div class="content-container table-container" id="available-versions-container"></div>
         </div>
     </div>
     <script src="scripts/svg_buttons.js"></script>

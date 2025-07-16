@@ -10,7 +10,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    position: relative;
     gap: 4px;
 }
 
@@ -63,4 +62,10 @@
     background-color: var(--vscode-editorError-background);
     color: var(--vscode-editorError-foreground);
     border-color: var(--vscode-editorError-foreground);
+}
+.nvmrc {
+    margin-left: auto;
+    padding: 4px 8px;
+    min-height: 0;
+    height: 30px;
 }

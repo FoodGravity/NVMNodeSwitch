@@ -22,6 +22,7 @@
 
 .title-bar {
     display: flex;
+    align-items: center;
 }
 
 /* Node 版本按钮容器样式 */
@@ -92,4 +93,22 @@ a {
 a:hover {
     text-decoration: underline;
     color: var(--vscode-textLink-activeForeground);
+}
+
+
+/* 版本源选择器样式 */
+.source-selector {
+    margin-left: 12px;
+    padding: 2px 8px;
+    background-color: var(--vscode-dropdown-background);
+    color: var(--vscode-dropdown-foreground);
+    border: 1px solid var(--vscode-dropdown-border);
+    border-radius: 4px;
+    min-height: 30px;
+    margin-left: auto;
+}
+
+.source-selector option {
+    background-color: var(--vscode-dropdown-background);
+    color: var(--vscode-dropdown-foreground);
 }

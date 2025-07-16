@@ -1,20 +1,39 @@
 // 获取VSCode API
 const vscode = acquireVsCodeApi();
 // 存储 NVM 命令的对象
+const nodeSources = {
+    nvm: 'nvm list available',
+    npmmirror: 'npmmirror https://npmmirror.com/mirrors/node/index.json',
+    nodejs: 'nodejs https://nodejs.org/dist/index.json',
+};
 const nvm = {
     v: 'nvm v',
     l: 'nvm list',
-    la: 'nvm list available',
+    get la() {
+        const versionSource = document.getElementById('version-source').value;
+        return nodeSources[versionSource];
+    },
     use: version => `nvm use ${version}`,
     install: version => `nvm install ${version}`,
-    uninstall: version => `nvm uninstall ${version}`
+    uninstall: version => `nvm uninstall ${version}`,
 };
+
 //命令转id
 function commandToId(command) {
-    return command.replace(/\s+/g, '-');
+    //如果command包含
+    if (command.includes('nvm')) {
+        return command.replace(/\s+/g, '-');
+    } else if (command.includes('npmmirror') || command.includes('nodejs')) {
+        return 'nvm-list-available';
+    }
+
 }
 //id转命令
 function idToCommand(id) {
+    if (id === 'nvm-list-available') { return nvm.la; }
+    if (id === 'node-recommend') { return id; }
+    if (id === 'create-nvmrc') { return id; }
+    if (id === 'nvmrc-check') { return id; }
     return id.replace(/-/g, ' ');
 }
 // 公共变量
@@ -24,26 +43,23 @@ let installedVersions = [];
 let availableVersions = {};
 
 // 监听来自扩展的消息，处理 NVM 命令结果
+// 在message事件监听器中添加新分支
 window.addEventListener('message', event => {
     const message = event.data;
+    console.log('收到', message);
     //停止刷新按钮
-    const sectionId = commandToId(message.command);
-    const refreshBtn = document.querySelector(`#refresh-${sectionId}`);
+    const refreshBtn = document.querySelector(`#refresh-${commandToId(message.command)}`);
     if (refreshBtn) {
         refreshBtn.stopLoading();
     }
     // 添加错误处理
     if (message.error) {
         console.error('命令执行出错:', message.error);
-        if (message.command === nvm.v) {
-            nvmVersion = '';
-            renderNvmV();
-        }
+        if (message.command === nvm.v) { nvmVersion = ''; renderNvmV(); }
         return;
     }
-    const trimmedResult = message.data.trim();
     if (message.command === nvm.v) {
-        nvmVersion = trimmedResult.includes('not found') || trimmedResult.includes('错误') ? '' : trimmedResult;
+        nvmVersion = message.data;
         renderNvmV();
     } else if (message.command === nvm.l) {
         const { versions, currentVersion } = parseInstalledVersions(message.data);
@@ -54,7 +70,39 @@ window.addEventListener('message', event => {
         availableVersions = parseAvailableVersions(message.data);
         renderNvmAvailable();
     }
+    else if (message.command === 'nvmrc-check') {
+        renderNvmrcCheck(message.data);
+    }
+    else if (message.command === 'node-recommend') {
+        renderRecommendVersion(message.data);
+    }
+    else if (message.command === 'create-nvmrc') {
+        renderNvmrcCheck(message.data);
+    }
+
 });
+
+// 新增渲染函数
+function renderNvmrcCheck(result) {
+    const container = document.getElementById('nvmrc-check').querySelector('.content-container');
+    const createBtn = document.getElementById('create-nvmrc');
+
+    if (result.includes('.nvmrc found')) {
+        container.innerHTML = `已找到.nvmrc文件，推荐版本：${recommendedVersion}`;
+        createBtn.style.display = 'none';
+    } else {
+        container.innerHTML = '未找到.nvmrc文件';
+        createBtn.style.display = 'flex';
+    }
+}
+
+function renderRecommendVersion(result) {
+    const container = document.getElementById('node-recommend').querySelector('.content-container');
+    container.innerHTML = result ?
+        `推荐使用版本：<span class="recommended-version">${result}</span>` :
+        '无推荐版本';
+}
+
 // 2. 解析已安装版本
 function parseInstalledVersions(result) {
     const versions = [];
@@ -73,8 +121,18 @@ function parseInstalledVersions(result) {
 
     return { versions, currentVersion };
 }
-// 3. 解析可用版本
+// 3. 解析nvm源可用版本
 function parseAvailableVersions(result) {
+    if (nvm.la.includes('npmmirror') || nvm.la.includes('nodejs')) {
+        return {
+            'LTS': result
+                .filter(v => v.lts)
+                .map(v => v.version.replace(/^v/, '')),
+            'other': result
+                .filter(v => !v.lts && /^\d+\.\d+\.\d+$/.test(v.version.replace(/^v/, '')))
+                .map(v => v.version.replace(/^v/, ''))
+        };
+    }
     const lines = result.split('\n').filter(line => line.trim());
     const versions = {};
 
@@ -102,6 +160,14 @@ function parseAvailableVersions(result) {
 
     return versions;
 }
+//版本源切换处理
+document.getElementById('version-source').addEventListener('change', function () {
+    executeUpdateCommand(nvm.la);
+});
+//创建.nvmrc文件
+document.getElementById('create-nvmrc').addEventListener('click', () => {
+    vscode.postMessage(`create-nvmrc ${nvmVersion}`);
+});
 
 // 渲染 NVM 状态
 function renderNvmV() {
@@ -112,6 +178,8 @@ function renderNvmV() {
             nvmVElement.querySelector('.content-container').innerHTML = `${nvmVersion}`;
             executeUpdateCommand(nvm.l);
             executeUpdateCommand(nvm.la);
+            executeUpdateCommand('nvmrc check');
+            executeUpdateCommand('nvm recommend');
         } else if (nvmVersion === '') {
             setAllSectionsToNone(true);
             nvmVElement.querySelector('.content-container').innerHTML = '未安装，请下载安装: <a href="https://github.com/coreybutler/nvm-windows/releases" target="_blank">nvm-windows 官方下载</a>';
@@ -120,7 +188,7 @@ function renderNvmV() {
 }
 // 2. 渲染已安装版本列表
 function renderNvmList() {
-    console.log('渲染已安装版本列表');
+    console.log('渲染已安装版本列表', installedVersions);
     const containerElement = document.getElementById('installed-versions-container');
     if (containerElement) {
         containerElement.innerHTML = '';
@@ -137,7 +205,7 @@ function renderNvmList() {
 }
 // 3. 渲染可用版本列表
 function renderNvmAvailable() {
-    console.log('渲染可用版本列表');
+    console.log('渲染可用版本列表', availableVersions);
     const elements = {
         container: document.querySelector('.table-container'),
         title: document.getElementById('available-versions-title')
@@ -253,11 +321,8 @@ function initializePage() {
     setAllSectionsToNone(true);
     renderNvmV();
     executeUpdateCommand(nvm.v);
-    // vscode.postMessage(nvm.v);
-    // renderNvmList();
-    // renderNvmAvailable();
 }
-// 确保在页面加载完成后执行初始化
+
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializePage);
 } else {
