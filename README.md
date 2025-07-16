@@ -19,31 +19,3 @@
 4. 如果没有 `.nvmrc` 文件，扩展会检查 `package.json` 文件，并推荐一个版本，星标推荐。
 5. 在"已安装版本"视图中，点击某个版本可以切换到该版本，也可以删除该版本。
 6. 在"可用版本"视图中，点击某个版本可以下载该版本，也可以删除该版本。
-
-
-## 开发
-
-如果您想从源代码构建此扩展，请按照以下步骤操作：
-
-```bash
-# 克隆仓库
-git clone <repository-url>
-cd node-version-manager
-
-# 安装依赖
-npm install
-
-# 编译扩展
-npm run compile
-
-# 在VSCode中测试扩展
-code --extensionDevelopmentPath=.
-```
-
-## 贡献
-
-欢迎提交问题和拉取请求！请查看[贡献指南](CONTRIBUTING.md)了解更多信息。
-
-## 许可证
-
-此扩展遵循[MIT许可证](LICENSE.md)。
