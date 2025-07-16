@@ -1,15 +1,15 @@
 {
-  "name": "node-version-manager",
-  "displayName": "Node Version Manager",
-  "description": "根据.nvmrc自动切换Node版本，并提供版本管理及推荐功能",
-  "version": "0.1.16",
-  "publisher": "您的发布者名称",
+  "name": "nvm-node-switch",
+  "displayName": "NVM Node Switch",
+  "description": "基于.nvmrc的Node版本自动切换工具，提供以下功能：\n- 自动检测并切换工作区.nvmrc指定版本\n- 智能推荐package.json适配的Node版本\n- 可视化管理已安装/可用Node版本（安装/切换/删除）\n- 支持nvm、nodejs官方和npmmirror多版本源\n- 提供跨平台的版本管理Webview界面",
+  "version": "0.1.11",
+  "publisher": "李学明",
   "repository": {
     "type": "git",
-    "url": "https://github.com/您的用户名/node-version-manager.git"
+    "url": "https://github.com/FoodGravity/NVMNodeSwitch.git"
   },
   "engines": {
-    "vscode": "^1.80.0"
+    "vscode": "^1.97.2"
   },
   "categories": [
     "Other"
@@ -60,14 +60,13 @@
     "@types/iconv-lite": "^0.0.1",
     "@types/mocha": "^10.0.7",
     "@types/node": "20.x",
-    "@types/vscode": "^1.80.0",
+    "@types/vscode": "^1.97.2",
     "@typescript-eslint/eslint-plugin": "^8.3.0",
     "@typescript-eslint/parser": "^8.3.0",
     "esbuild": "^0.23.0",
     "eslint": "^9.9.1",
     "typescript": "^5.5.3",
-    "vscode-test": "^1.6.1",
-    "vsce": "^2.15.0"
+    "vscode-test": "^1.6.1"
   },
   "dependencies": {
     "iconv-lite": "^0.6.3"
