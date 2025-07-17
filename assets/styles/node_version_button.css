@@ -63,6 +63,26 @@
     color: var(--vscode-editorError-foreground);
     border-color: var(--vscode-editorError-foreground);
 }
+
+.source-selector,
 .nvmrc {
+    margin-left: auto;
     padding: 0px 8px;
+}
+
+.source-selector:focus {
+    outline: none;
+    border-color: var(--vscode-focusBorder);
+    box-shadow: 0 0 0 1px var(--vscode-focusBorder);
+}
+
+.source-selector option {
+    background-color: var(--vscode-dropdown-background);
+    color: var(--vscode-dropdown-foreground);
+    padding: 4px 8px;
+}
+
+.source-selector option:checked {
+    background-color: var(--vscode-list-activeSelectionBackground);
+    color: var(--vscode-list-activeSelectionForeground);
 }

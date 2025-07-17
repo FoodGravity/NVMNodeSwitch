@@ -10,6 +10,7 @@
     color: currentColor;
     transition: transform 0.2s;
 
+    margin-left: auto;
     display: flex;
     align-items: center;
     justify-content: center;
