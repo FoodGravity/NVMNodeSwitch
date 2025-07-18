@@ -100,3 +100,15 @@ a:hover {
     text-decoration: underline;
     color: var(--vscode-textLink-activeForeground);
 }
+
+.success-color {
+    color: var(--vscode-testing-iconPassed);
+}
+
+.error-color {
+    color: var(--vscode-editorError-foreground);
+}
+
+.warning-color {
+    color: var(--vscode-testing-iconQueued);
+}

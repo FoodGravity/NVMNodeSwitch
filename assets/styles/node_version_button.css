@@ -6,11 +6,25 @@
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s;
-    border: 1px solid var(--vscode-button-border);
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 4px;
+    background-color: var(--vscode-button-secondaryBackground);
+    color: var(--vscode-button-secondaryForeground);
+    border: 1px solid var(--vscode-button-border);
+    overflow: hidden;
+}
+
+.node-version-button .progress-bar {
+    position: absolute;
+    bottom: 0;
+    /* left: 0; */
+    right: 0;
+    height: 2px;
+    background-color: var(--vscode-errorForeground);
+    width: 100%;
+    transform-origin: left center;
 }
 
 .node-version-button.table {
@@ -38,10 +52,26 @@
     border-color: color-mix(in srgb, var(--vscode-editorInfo-foreground) 30%, transparent);
 }
 
+.node-version-button.confirm,
 .node-version-button.error {
     background-color: var(--vscode-editorError-background);
     color: var(--vscode-editorError-foreground);
     border-color: color-mix(in srgb, var(--vscode-editorError-foreground) 30%, transparent);
+}
+
+.node-version-button.success {
+    color: var(--vscode-testing-iconPassed);
+    border-color: color-mix(in srgb, var(--vscode-testing-iconPassed) 30%, transparent);
+}
+
+.node-version-button.warning {
+    color: var(--vscode-testing-iconQueued);
+    border-color: color-mix(in srgb, var(--vscode-testing-iconQueued) 30%, transparent);
+}
+
+.node-version-button.warning:hover {
+    color: var(--vscode-testing-iconQueued);
+    border-color: var(--vscode-testing-iconQueued);
 }
 
 /* 统一悬停效果 */
@@ -58,10 +88,17 @@
     border-color: var(--vscode-editorInfo-foreground);
 }
 
+.node-version-button.confirm:hover,
 .node-version-button.error:hover {
     background-color: var(--vscode-editorError-background);
     color: var(--vscode-editorError-foreground);
     border-color: var(--vscode-editorError-foreground);
+}
+
+
+.node-version-button.success:hover {
+    color: var(--vscode-testing-iconPassed);
+    border-color: var(--vscode-testing-iconPassed);
 }
 
 .source-selector,

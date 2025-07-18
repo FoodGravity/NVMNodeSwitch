@@ -10,14 +10,27 @@ const icons = {
 <polyline points="7 10 12 15 17 10"></polyline>
 <line x1="12" y1="15" x2="12" y2="3"></line>
 </svg>`,
-    error: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" >
+    error: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 <circle cx="12" cy="12" r="10"></circle>
-<line x1="12" y1="8" x2="12" y2="12"></line>
-<line x1="12" y1="16" x2="12.01" y2="16"></line>
+<path d="M12 7v5" stroke-linecap="round"/>
+<path d="M12 16v0.5" stroke-linecap="round"/>
 </svg>`,
     loading: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
-</svg>`
+</svg>`,
+    success: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+<path d="M20 6L9 17l-5-5"/>
+</svg>`,
+    warning: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+<line x1="12" y1="9" x2="12" y2="13"></line>
+<line x1="12" y1="17" x2="12.01" y2="17"></line>
+</svg>`,
+    confirm: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+<path d="M4 7h16m-1 0l-1 12a2 2 0 01-2 2H8a2 2 0 01-2-2L5 7"></path>
+<path d="M9 5a2 2 0 012-2h2a2 2 0 012 2v2H9V5z"></path>
+<path d="M10 12l2 2 4-4" stroke-linecap="round"/>
+</svg>`,
 };
 //创建svg按钮 
 function createSvgButton(iconName, iconId) {
@@ -27,7 +40,6 @@ function createSvgButton(iconName, iconId) {
         svgButton.id = iconId;
     }
     svgButton.innerHTML = icons[iconName];
-    // svgButton.append(createSvgIcon(iconName, iconId));
     return svgButton;
 }
 //修改svg图标

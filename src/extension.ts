@@ -66,68 +66,73 @@ class NodeVersionManager {
     }
 
     /** 执行Webview命令并返回结果 */
-    private async executeCommand(command: string) {
+    private async executeCommand(command: string, requestId?: string) {
         // HTTP 请求处理
         if (command.includes('npmmirror') || command.includes('nodejs')) {
-            return this.handleHttpRequest(command);
+            return this.handleHttpRequest(command, requestId);
         }
 
         // 特殊命令处理
         switch (true) {
             case command === 'nvmrc check':
-                return this.handleNvmrcCheck(command);
+                return this.handleNvmrcCheck(command, requestId);
             case command.includes('create nvmrc'):
-                return this.handleCreateNvmrc(command);
+                return this.handleCreateNvmrc(command, requestId);
             case command === 'node recommend':
-                return this.handleEngineRecommendation(command);
-
+                return this.handleEngineRecommendation(command, requestId);
         }
 
         // 本地命令执行
-        return this.executeLocalCommand(command);
+        return this.executeLocalCommand(command, requestId);
     }
 
     /** 处理HTTP请求 */
-    private async handleHttpRequest(command: string) {
+    private async handleHttpRequest(command: string, requestId?: string) {
         const url = command.split(' ')[1];
         try {
             const response = await fetch(url);
             const jsonData = await response.json();
-            this.postMessage(command, jsonData);
+            this.postMessage(command, jsonData, undefined, requestId);
         } catch (error: any) {
-            this.handleError(command, error);
+            this.handleError(command, error, requestId);
         }
     }
 
     /** 处理.nvmrc检查 */
-    private handleNvmrcCheck(command: string) {
-
+    private handleNvmrcCheck(command: string, requestId?: string) {
         const workspaceRoot = vscode.workspace.rootPath || '';
         const nvmrcPath = path.join(workspaceRoot, '.nvmrc');
         const hasNvmrc = fs.existsSync(nvmrcPath);
         const content = hasNvmrc ? fs.readFileSync(nvmrcPath, 'utf8').trim() : '';
-        this.postMessage(command, content);
+        this.postMessage(command, content, undefined, requestId);
     }
     /** 处理创建.nvmrc文件 */
-    private handleCreateNvmrc(command: string) {
-        const nvmVersion = command.split(' ')[2];
-        const workspaceRoot = vscode.workspace.rootPath || '';
-        const nvmrcPath = path.join(workspaceRoot, '.nvmrc');
-        fs.writeFileSync(nvmrcPath, nvmVersion);
-        this.postMessage('create nvmrc', nvmVersion);
+    private handleCreateNvmrc(command: string, requestId?: string) {
+        const nodeVersion = command.split(' ')[2];
+        const nvmrcPath = path.join(vscode.workspace.rootPath || '', '.nvmrc');
+        fs.writeFileSync(nvmrcPath, nodeVersion);
+        this.postMessage(command, fs.existsSync(nvmrcPath), undefined, requestId);
     }
     /** 处理引擎版本推荐 */
-    private handleEngineRecommendation(command: string) {
+    private handleEngineRecommendation(command: string, requestId?: string) {
+        try {
+            const workspaceRoot = vscode.workspace.rootPath || '';
+            const pkgPath = path.join(workspaceRoot, 'package.json');
+            const pkgJson = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+            const engineVersion = pkgJson.engines?.node?.match(/\d+\.\d+\.\d+/)?.[0];
+            this.postMessage(
+                command,
+                fs.existsSync(pkgPath) ? engineVersion : null,
+                undefined,
+                requestId);
 
-        const workspaceRoot = vscode.workspace.rootPath || '';
-        const pkgPath = path.join(workspaceRoot, 'package.json');
-        const pkgJson = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-        const engineVersion = pkgJson.engines?.node?.match(/\d+\.\d+\.\d+/)?.[0];
-        this.postMessage(command, engineVersion);
+        } catch (error: any) {
+            this.handleError(command, error, requestId);
+        }
     }
 
     /** 执行本地命令 */
-    private async executeLocalCommand(command: string) {
+    private async executeLocalCommand(command: string, requestId?: string) {
         try {
             const exe = process.platform === 'win32' ? `cmd.exe /c ${command}` : command;
             const child = spawn(exe, {
@@ -141,23 +146,25 @@ class NodeVersionManager {
                 throw new Error(`退出码: ${exitCode}\n${errorOutput || output}`);
             }
 
-            this.postMessage(command, output);
+            this.postMessage(command, output, undefined, requestId);
             this.log(`命令执行完成: ${exe}`);
 
         } catch (error) {
-            this.handleError(command, error);
+            this.handleError(command, error, requestId);
         }
     }
     /** 统一消息发送方法 */
-    private postMessage(command: string, data: any, error?: string) {
-        this.webviewView?.webview.postMessage({ command, data, error });
+    private postMessage(command: string, data: any, error?: string, requestId?: string) {
+        this.log(`发送数据: ${command},${data},${error},${requestId}`)
+        this.webviewView?.webview.postMessage({ command, data, error, requestId });
     }
 
+
     /** 统一错误处理方法 */
-    private handleError(command: string, error: Error | unknown) {
+    private handleError(command: string, error: Error | unknown, requestId?: string) {
         const errorMessage = error instanceof Error ? error.message : '未知错误';
         this.log(`执行出错: ${errorMessage}`);
-        this.postMessage(command, null, errorMessage);
+        this.postMessage(command, null, errorMessage, requestId);
     }
 
     /** 处理命令输出 */
@@ -210,9 +217,10 @@ class NodeVersionManager {
 
                 // 添加消息监听器，并确保在添加前 webviewView 已初始化
                 if (this.webviewView) {
+                    // 修改 Webview 消息监听器部分
                     const listener = webviewView.webview.onDidReceiveMessage(
-                        command => {
-                            this.executeCommand(command);
+                        async (message) => {
+                            await this.executeCommand(message.command, message.requestId);
                         },
                         undefined,
                         this.context.subscriptions

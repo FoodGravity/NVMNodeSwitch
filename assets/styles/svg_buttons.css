@@ -19,6 +19,7 @@
     border-radius: 4px;
 
     animation: none;
+    
 }
 
 .button-icon.refresh {
@@ -29,16 +30,14 @@
     background-color: var(--vscode-button-secondaryHoverBackground);
 }
 
+.button-icon.confirm:hover,
 .button-icon.delete:hover {
     background-color: color-mix(in srgb, var(--vscode-errorForeground) 70%, transparent);
 }
 
-.button-icon.refresh svg {
+.button-icon svg {
     width: 14px;
     height: 14px;
-}
-
-.button-icon svg {
     stroke: var(--vscode-icon-foreground);
     padding: 4px;
     stroke: currentColor;
@@ -60,3 +59,4 @@
         transform: rotate(360deg);
     }
 }
+

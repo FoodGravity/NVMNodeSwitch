@@ -12,69 +12,115 @@ function createButtonComponent(version, isCurrent, inTable, installed) {
     button.addEventListener('click', async (event) => {
         let command;
         //如果点击的是图标且图标是删除图标
-        if (event.target.closest('.button-icon') && event.target.closest('.button-icon').classList.contains('delete')) {
-            event.stopPropagation();
-            command = nvm.uninstall(version);
+        if (event.target.closest('.button-icon')) {
+            if (event.target.closest('.button-icon').classList.contains('delete')) {
+                updateButtonState(button, 'confirm');
+            } else if (event.target.closest('.button-icon').classList.contains('confirm')) {
+                event.stopPropagation();
+                command = 'nvm-uninstall';
+            }
         } else if (button.querySelector('.button-icon').classList.contains('download')) {
-            command = nvm.install(version);
+            command = 'nvm-install';
         } else if (button.classList.contains('installed')) {
-            command = nvm.use(version);
+            command = 'nvm-use';
         }
+
         if (command) {
-            console.log('发送命令:', command);
-            vscode.postMessage(command);
-            updateButtonState(button, 'downloading');
-            window.addEventListener('message', handleMessage, { once: true });
+            await handleNvmCommand(command, version, button);
         } else {
             console.log('未触发命令');
         }
     });
-    // 监听来自扩展的消息
-    const handleMessage = (event) => {
-        const message = event.data;
-        if (message.command && message.command.includes(version)) {
-            console.log('接收到消息:', event.data);
-            window.removeEventListener('message', handleMessage);
-            if (message.error || (message.data && message.data.includes('error'))) {
-                updateButtonState(button, 'error');
-                console.error('命令执行失败:', message.error || message.data);
-            } else if (message.command === nvm.uninstall(version)) {
-                removeNonTableVersionButtons(version);
-                setVersionButtonState(version, 'table');
-                vscode.postMessage(nvm.l);
-            } else if (message.command === nvm.use(version)) {
-                resetCurrentButtons();
-                setVersionButtonState(version, 'current');
-            } else if (message.command === nvm.install(version)) {
-                updateButtonState(button, 'installed');
-                vscode.postMessage(nvm.l);
-            }
-        }
-    };
     return button;
 }
+async function handleNvmCommand(command, version, button = null) {
+    // 统一设置下载状态
+    if (button) updateButtonState(button, 'downloading');
 
+    const { data, error } = await getData(command, version);
 
+    // 统一错误处理
+    if (error || (data && data.includes('error'))) {
+        if (button) updateButtonState(button, 'error');
+        console.error('命令执行失败:', error || data);
+        return false;
+    }
+
+    // 根据命令类型处理
+    const actions = {
+        'nvm-uninstall': () => {
+            removeNonTableVersionButtons(version);
+            setVersionButtonState(version, 'table');
+        },
+        'nvm-use': () => {
+            resetCurrentButtons();
+            setVersionButtonState(version, 'current');
+        },
+        'nvm-install': () => {
+            if (button) updateButtonState(button, 'installed');
+        }
+    };
+
+    if (actions[command]) {
+        actions[command]();
+        renderNvmList(false);
+    }
+
+    return true;
+}
+// 状态图标映射
+const BUTTON_ICONS = {
+    table: 'download',
+    installed: 'delete',
+    current: 'delete',
+    downloading: 'loading',
+    error: 'error',
+    confirm: 'confirm'
+};
 function updateButtonState(button, state) {
+    // 如果是确认状态，添加超时自动取消
+    if (state === 'confirm') {
+        const version = button.getAttribute('data-version');
+        button.innerHTML = `${version}<div class="progress-bar"></div>`;
+        button.appendChild(createSvgButton(BUTTON_ICONS[state]));
+        
+        const progressBar = button.querySelector('.progress-bar');
+        progressBar.style.width = '100%';
+        progressBar.style.transition = 'width 3s linear';
+        
+        setTimeout(() => {
+            progressBar.style.width = '0%';
+        }, 10);
+        
+        const timer = setTimeout(() => {
+            if (button.classList.contains('confirm')) {
+                const activeState = version === currentNodeVersion ? 'current' : 'installed';
+                button.innerHTML = version;
+                updateButtonState(button, activeState);
+            }
+        }, 3000);
+    }
+    console.log('更新按钮状态:', state);
     if (button.classList.contains('table')) { state = 'table.' + state; }
     // 完全重置所有状态类名
-    const allStates = ['table', 'installed', 'current', 'downloading', 'error'];
+    const allStates = Object.keys(BUTTON_ICONS);
     button.classList.remove(...allStates);
     // 添加新状态类名
     if (state) {
         state.split('.').forEach(statePart => {
             button.classList.add(statePart);
+
         });
     }
-    const stateMap = { table: 'download', current: 'delete', installed: 'delete', downloading: 'loading', error: 'error' };
-    const stateConfig = stateMap[state?.split('.')?.find(s => s !== 'table') || 'table'];
-    // 更新图标  
+    // 更新图标
+    const activeState = state?.split('.')?.find(s => s !== 'table') || 'table';
     const iconButton = button.querySelector('.button-icon');
     if (iconButton) {
-        updateSvgIcon(iconButton, stateConfig);
+        updateSvgIcon(iconButton, BUTTON_ICONS[activeState]);
     } else {
-        button.appendChild(createSvgButton(stateConfig));
+        button.appendChild(createSvgButton(BUTTON_ICONS[activeState]));
     }
+
 }
 
 // 恢复所有当前状态的按钮为installed
