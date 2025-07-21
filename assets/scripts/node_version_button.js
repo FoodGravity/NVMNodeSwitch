@@ -1,11 +1,10 @@
-function createButtonComponent(version, isCurrent, inTable, installed) {
+function createButtonComponent(text, state) {
     // 按钮元素
     const button = document.createElement('button');
     button.className = 'node-version-button';
-    button.setAttribute('data-version', version);
-    button.textContent = version;
-    // 根据参数自动判断状态
-    const state = (inTable ? 'table.' : '') + (isCurrent ? 'current' : installed ? 'installed' : 'table');
+    button.setAttribute('data', text);
+    button.textContent = text;
+    console.log('创建按钮:', text, state);
     //更新按钮状态
     updateButtonState(button, state);
     // 点击事件处理
@@ -23,47 +22,62 @@ function createButtonComponent(version, isCurrent, inTable, installed) {
             command = 'nvm-install';
         } else if (button.classList.contains('installed')) {
             command = 'nvm-use';
+        } else if (button.classList.contains('nvmrc')) {
+            await handleNvmCommand('create-nvmrc', currentNodeVersion || '', button);
+            return;
         }
 
         if (command) {
-            await handleNvmCommand(command, version, button);
+            await handleNvmCommand(command, button.getAttribute('data'), button);
         } else {
             console.log('未触发命令');
         }
     });
     return button;
 }
-async function handleNvmCommand(command, version, button = null) {
+async function handleNvmCommand(command, version, button = null, refreshList) {
     // 统一设置下载状态
     if (button) updateButtonState(button, 'downloading');
 
     const { data, error } = await getData(command, version);
 
     // 统一错误处理
-    if (error || (data && data.includes('error'))) {
+    const errorMessage = String(data || '');
+    if (error || (data && errorMessage.includes('error'))) {
         if (button) updateButtonState(button, 'error');
         console.error('命令执行失败:', error || data);
         return false;
     }
+    // 从返回数据中提取版本号
+    let versionFromResponse = version;
+    if (data) {
+        const versionMatch = data.match(/(\d+\.\d+\.\d+)/);
+        if (versionMatch) versionFromResponse = versionMatch[0];
+        console.log('返回的版本号', versionFromResponse);
+    }
+
 
     // 根据命令类型处理
     const actions = {
         'nvm-uninstall': () => {
             removeNonTableVersionButtons(version);
-            setVersionButtonState(version, 'table');
+            setVersionButtonState(versionFromResponse, 'table');
         },
         'nvm-use': () => {
             resetCurrentButtons();
-            setVersionButtonState(version, 'current');
+            setVersionButtonState(versionFromResponse, 'current');
         },
         'nvm-install': () => {
             if (button) updateButtonState(button, 'installed');
+        },
+        'create-nvmrc': () => {
+            if (button) updateButtonState(button, 'success');
         }
     };
 
     if (actions[command]) {
         actions[command]();
-        renderNvmList(false);
+        if (refreshList) renderNvmList(false);
     }
 
     return true;
@@ -75,23 +89,26 @@ const BUTTON_ICONS = {
     current: 'delete',
     downloading: 'loading',
     error: 'error',
-    confirm: 'confirm'
+    confirm: 'confirm',
+    success: 'success',
+    warning: 'warning',
+    // nvmrc: 'download'
 };
-function updateButtonState(button, state) {
+function updateButtonState(button, state, text, iconState) {
     // 如果是确认状态，添加超时自动取消
     if (state === 'confirm') {
-        const version = button.getAttribute('data-version');
+        const version = button.getAttribute('data');
         button.innerHTML = `${version}<div class="progress-bar"></div>`;
         button.appendChild(createSvgButton(BUTTON_ICONS[state]));
-        
+
         const progressBar = button.querySelector('.progress-bar');
         progressBar.style.width = '100%';
         progressBar.style.transition = 'width 3s linear';
-        
+
         setTimeout(() => {
             progressBar.style.width = '0%';
         }, 10);
-        
+
         const timer = setTimeout(() => {
             if (button.classList.contains('confirm')) {
                 const activeState = version === currentNodeVersion ? 'current' : 'installed';
@@ -100,28 +117,42 @@ function updateButtonState(button, state) {
             }
         }, 3000);
     }
-    console.log('更新按钮状态:', state);
+    // 更新按钮文本
+    if (text) {
+        button.textContent = text;
+        button.setAttribute('data', text);
+    }
+
     if (button.classList.contains('table')) { state = 'table.' + state; }
+    if (button.classList.contains('nvmrc')) { state = 'nvmrc.' + state; }
+    console.log('更新按钮状态:', state, text, iconState);
     // 完全重置所有状态类名
     const allStates = Object.keys(BUTTON_ICONS);
     button.classList.remove(...allStates);
     // 添加新状态类名
-    if (state) {
-        state.split('.').forEach(statePart => {
-            button.classList.add(statePart);
-
-        });
-    }
-    // 更新图标
-    const activeState = state?.split('.')?.find(s => s !== 'table') || 'table';
-    const iconButton = button.querySelector('.button-icon');
-    if (iconButton) {
-        updateSvgIcon(iconButton, BUTTON_ICONS[activeState]);
+    if (state) { state.split('.').forEach(statePart => { button.classList.add(statePart); }); }
+    // 更新图标   
+    let iconButton = button.querySelector('.button-icon');
+    if (iconState) {
+        if (iconButton) {
+            updateSvgIcon(iconButton, iconState);
+        } else {
+            iconButton = createSvgButton(iconState);
+            button.appendChild(iconButton);
+        }
     } else {
-        button.appendChild(createSvgButton(BUTTON_ICONS[activeState]));
+        const activeState = state?.split('.')?.[1] || state;
+        console.log('更新图标:', activeState);
+        if (iconButton) {
+            updateSvgIcon(iconButton, BUTTON_ICONS[activeState]);
+        } else {
+            console.log('创建图标按钮:', BUTTON_ICONS[activeState]);
+            iconButton = createSvgButton(BUTTON_ICONS[activeState]);
+            button.appendChild(iconButton);
+        }
     }
-
 }
+
 
 // 恢复所有当前状态的按钮为installed
 function resetCurrentButtons() {
@@ -134,7 +165,7 @@ function resetCurrentButtons() {
 //设置指定版本的按钮状态
 function setVersionButtonState(version, state) {
     console.log('设置版本按钮状态:', version, state);
-    const versionButtons = document.querySelectorAll(`.node-version-button[data-version="${version}"]`);
+    const versionButtons = document.querySelectorAll(`.node-version-button[data="${version}"]`);
     versionButtons.forEach(button => {
         updateButtonState(button, state);
     });
@@ -142,7 +173,7 @@ function setVersionButtonState(version, state) {
 //移除指定版本的非table按钮
 function removeNonTableVersionButtons(version) {
     console.log('移除非table版本按钮:', version);
-    const versionButtons = document.querySelectorAll(`.node-version-button[data-version="${version}"]`);
+    const versionButtons = document.querySelectorAll(`.node-version-button[data="${version}"]`);
     versionButtons.forEach(button => {
         if (!button.classList.contains('table')) {
             button.remove();

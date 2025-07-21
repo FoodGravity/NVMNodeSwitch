@@ -113,7 +113,7 @@ function setRequestTimeout(sectionId, command, requestObj, resolve) {
             data: null,
             error: '请求超时'
         });
-    }, 30000);
+    }, 1200000);//20分钟、20*60*1000
 
     requestObj.timeoutId = timeoutId;
 }

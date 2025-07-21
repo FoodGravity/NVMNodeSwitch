@@ -104,11 +104,14 @@ class NodeVersionManager {
         const nvmrcPath = path.join(workspaceRoot, '.nvmrc');
         const hasNvmrc = fs.existsSync(nvmrcPath);
         const content = hasNvmrc ? fs.readFileSync(nvmrcPath, 'utf8').trim() : '';
-        this.postMessage(command, content, undefined, requestId);
+        this.postMessage(command, {
+            found: hasNvmrc,
+            version: content
+        }, undefined, requestId);
     }
     /** 处理创建.nvmrc文件 */
     private handleCreateNvmrc(command: string, requestId?: string) {
-        const nodeVersion = command.split(' ')[2];
+        const nodeVersion = command.split(' ')[2] || '';
         const nvmrcPath = path.join(vscode.workspace.rootPath || '', '.nvmrc');
         fs.writeFileSync(nvmrcPath, nodeVersion);
         this.postMessage(command, fs.existsSync(nvmrcPath), undefined, requestId);

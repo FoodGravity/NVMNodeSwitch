@@ -81,6 +81,9 @@
     border-color: var(--vscode-list-hoverBackground);
     border: 1px solid var(--vscode-button-hoverBackground);
 }
+.node-version-button.current:hover {
+    background-color: color-mix(in srgb, var(--vscode-button-background) 50%, transparent);
+}
 
 .node-version-button.downloading:hover {
     background-color: var(--vscode-editorInfo-background);
@@ -104,7 +107,7 @@
 .source-selector,
 .nvmrc {
     margin-left: auto;
-    padding: 0px 8px;
+    padding: 0 1px 0 8px;
 }
 
 .source-selector:focus {
