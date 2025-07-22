@@ -3754,6 +3754,7 @@ var NodeVersionManager = class {
   }
   /** 执行Webview命令并返回结果 */
   async executeCommand(command, requestId) {
+    this.log(`\u63A5\u6536\u547D\u4EE4${command}`);
     if (command.includes("npmmirror") || command.includes("nodejs")) {
       return this.handleHttpRequest(command, requestId);
     }
@@ -3764,8 +3765,21 @@ var NodeVersionManager = class {
         return this.handleCreateNvmrc(command, requestId);
       case command === "node recommend":
         return this.handleEngineRecommendation(command, requestId);
+      case command.includes("confirm delete"):
+        return this.handleConfirmDelete(command, requestId);
     }
     return this.executeLocalCommand(command, requestId);
+  }
+  /** 确认删除Node.js版本 */
+  async handleConfirmDelete(command, requestId) {
+    this.log(`\u8C03\u7528\u786E\u8BA4\u6846${command}`);
+    const version = command.split(" ")[2];
+    const result = await vscode.window.showInformationMessage(
+      `\u786E\u5B9A\u8981\u5220\u9664Node.js\u7248\u672C ${version} \u5417?`,
+      { modal: true },
+      "\u786E\u5B9A"
+    );
+    this.postMessage(command, result === "\u786E\u5B9A", void 0, requestId);
   }
   /** 处理HTTP请求 */
   async handleHttpRequest(command, requestId) {
@@ -3850,12 +3864,10 @@ ${errorOutput || output}`);
     child.stdout?.on("data", (data) => {
       const chunk = decodeOutput(data);
       output += chunk;
-      this.log(`[\u8F93\u51FA]: ${chunk}`);
     });
     child.stderr?.on("data", (data) => {
       const chunk = decodeOutput(data);
       errorOutput += chunk;
-      this.log(`[\u9519\u8BEF]: ${chunk}`);
     });
     const exitCode = await new Promise((resolve) => {
       child.on("close", resolve);

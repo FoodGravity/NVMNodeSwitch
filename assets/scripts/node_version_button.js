@@ -10,10 +10,12 @@ function createButtonComponent(text, state) {
     // 点击事件处理
     button.addEventListener('click', async (event) => {
         let command;
+        let version = button.getAttribute('data');
+        let localButton = button;
         //如果点击的是图标且图标是删除图标
         if (event.target.closest('.button-icon')) {
             if (event.target.closest('.button-icon').classList.contains('delete')) {
-                updateButtonState(button, 'confirm');
+                command = 'confirm-delete';
             } else if (event.target.closest('.button-icon').classList.contains('confirm')) {
                 event.stopPropagation();
                 command = 'nvm-uninstall';
@@ -23,27 +25,27 @@ function createButtonComponent(text, state) {
         } else if (button.classList.contains('installed')) {
             command = 'nvm-use';
         } else if (button.classList.contains('nvmrc')) {
-            await handleNvmCommand('create-nvmrc', currentNodeVersion || '', button);
-            return;
+            command = 'create-nvmrc';
+            version = currentNodeVersion || '';
         }
 
         if (command) {
-            await handleNvmCommand(command, button.getAttribute('data'), button);
+            await handleNvmCommand(command, version, localButton);
         } else {
             console.log('未触发命令');
         }
     });
     return button;
 }
-async function handleNvmCommand(command, version, button = null, refreshList) {
+async function handleNvmCommand(command, version, button = null, refreshList = true) {
     // 统一设置下载状态
-    if (button) updateButtonState(button, 'downloading');
+    if (button) updateButtonState(button, command == 'confirm-delete' ? 'confirm' : 'downloading');
 
     const { data, error } = await getData(command, version);
 
     // 统一错误处理
     const errorMessage = String(data || '');
-    if (error || (data && errorMessage.includes('error'))) {
+    if (error || (data && (errorMessage.includes('error') || errorMessage.includes('Error')))) {
         if (button) updateButtonState(button, 'error');
         console.error('命令执行失败:', error || data);
         return false;
@@ -51,9 +53,12 @@ async function handleNvmCommand(command, version, button = null, refreshList) {
     // 从返回数据中提取版本号
     let versionFromResponse = version;
     if (data) {
-        const versionMatch = data.match(/(\d+\.\d+\.\d+)/);
-        if (versionMatch) versionFromResponse = versionMatch[0];
-        console.log('返回的版本号', versionFromResponse);
+        const dataStr = String(data); // 确保转换为字符串
+        const versionMatch = dataStr.match(/(\d+\.\d+\.\d+)/);
+        if (versionMatch) {
+            versionFromResponse = versionMatch[0];
+            console.log('返回的版本号', versionFromResponse);
+        }
     }
 
 
@@ -72,6 +77,15 @@ async function handleNvmCommand(command, version, button = null, refreshList) {
         },
         'create-nvmrc': () => {
             if (button) updateButtonState(button, 'success');
+        },
+        'confirm-delete': () => {
+            if (data) {
+                handleNvmCommand('nvm-uninstall', version, button);
+            } else {
+                autoSetVersionButtonState(version);
+            }
+            refreshList = false
+            return true;
         }
     };
 
@@ -95,28 +109,6 @@ const BUTTON_ICONS = {
     // nvmrc: 'download'
 };
 function updateButtonState(button, state, text, iconState) {
-    // 如果是确认状态，添加超时自动取消
-    if (state === 'confirm') {
-        const version = button.getAttribute('data');
-        button.innerHTML = `${version}<div class="progress-bar"></div>`;
-        button.appendChild(createSvgButton(BUTTON_ICONS[state]));
-
-        const progressBar = button.querySelector('.progress-bar');
-        progressBar.style.width = '100%';
-        progressBar.style.transition = 'width 3s linear';
-
-        setTimeout(() => {
-            progressBar.style.width = '0%';
-        }, 10);
-
-        const timer = setTimeout(() => {
-            if (button.classList.contains('confirm')) {
-                const activeState = version === currentNodeVersion ? 'current' : 'installed';
-                button.innerHTML = version;
-                updateButtonState(button, activeState);
-            }
-        }, 3000);
-    }
     // 更新按钮文本
     if (text) {
         button.textContent = text;
@@ -178,5 +170,22 @@ function removeNonTableVersionButtons(version) {
         if (!button.classList.contains('table')) {
             button.remove();
         }
+    });
+}
+//自动设置指定版本按钮状态
+function autoSetVersionButtonState(version) {
+    console.log('自动设置版本按钮状态:', version);
+    const versionButtons = document.querySelectorAll(`.node-version-button[data="${version}"]`);
+    versionButtons.forEach(button => {
+        if (installedVersions.includes(version)) {
+            updateButtonState(button, version === currentNodeVersion ? 'current' : 'installed');
+        } else {
+            if (!button.classList.contains('table')) {
+                button.remove();
+            } else {
+                updateButtonState(button, 'table');
+            }
+        }
+
     });
 }

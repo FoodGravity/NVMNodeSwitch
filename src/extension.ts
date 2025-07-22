@@ -67,6 +67,7 @@ class NodeVersionManager {
 
     /** 执行Webview命令并返回结果 */
     private async executeCommand(command: string, requestId?: string) {
+        this.log(`接收命令${command}`);
         // HTTP 请求处理
         if (command.includes('npmmirror') || command.includes('nodejs')) {
             return this.handleHttpRequest(command, requestId);
@@ -80,10 +81,24 @@ class NodeVersionManager {
                 return this.handleCreateNvmrc(command, requestId);
             case command === 'node recommend':
                 return this.handleEngineRecommendation(command, requestId);
+            case command.includes('confirm delete'):
+                return this.handleConfirmDelete(command, requestId);
         }
 
         // 本地命令执行
         return this.executeLocalCommand(command, requestId);
+    }
+
+    /** 确认删除Node.js版本 */
+    private async handleConfirmDelete(command: string, requestId?: string) {
+        this.log(`调用确认框${command}`);
+        const version = command.split(' ')[2];
+        const result = await vscode.window.showInformationMessage(
+            `确定要删除Node.js版本 ${version} 吗?`,
+            { modal: true },
+            '确定'
+        );
+        this.postMessage(command, result === '确定', undefined, requestId);
     }
 
     /** 处理HTTP请求 */
@@ -178,13 +193,13 @@ class NodeVersionManager {
         child.stdout?.on('data', (data: Buffer) => {
             const chunk = decodeOutput(data);
             output += chunk;
-            this.log(`[输出]: ${chunk}`);
+            // this.log(`[输出]: ${chunk}`);
         });
 
         child.stderr?.on('data', (data: Buffer) => {
             const chunk = decodeOutput(data);
             errorOutput += chunk;
-            this.log(`[错误]: ${chunk}`);
+            // this.log(`[错误]: ${chunk}`);
         });
 
         const exitCode = await new Promise<number>((resolve) => {

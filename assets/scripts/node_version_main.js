@@ -78,10 +78,10 @@ async function renderNvmV() {
             setAllSectionsToNone(false);
             nvmVElement.querySelector('.content-container').innerHTML = `${nvmV}`;
             // 自动获取其他数据 
-            renderNvmrcCheck();
+            await renderNvmrcCheck();
             renderRecommendVersion()
-            renderNvmList();
-            renderNvmAvailable();
+            await renderNvmList();
+            await renderNvmAvailable();
         } else {
             setAllSectionsToNone(true);
             nvmVElement.querySelector('.content-container').innerHTML = '未安装，请下载安装: <a href="https://github.com/coreybutler/nvm-windows/releases" target="_blank">nvm-windows 官方下载</a>';
@@ -97,58 +97,26 @@ async function setCurrentVersionTip(isSuccess) {
     currentVersionText.classList.add(currentNodeVersion ? isSuccess ? 'success-color' : 'warning-color' : 'error-color');
 }
 // 设置nvmrc检查结果
-async function renderNvmrcCheck(needUse = true) {
-    // 1. 设置加载状态并获取数据
+async function renderNvmrcCheck(useNvmrc = true) {
     const sectionId = 'nvmrc-check';
     setLoadingState(sectionId, true);
     const { data: result } = await getData(sectionId);
-
-    // 2. 获取DOM元素
-    const titleBar = document.getElementById(sectionId).querySelector('.title-bar');
-    const tooltip = document.getElementById(sectionId).querySelector('.content-container');
-    tooltip.className = 'content-container segmentation';
-
-    // 3. 确保按钮存在
-    let button = titleBar.querySelector('.node-version-button') || createButtonComponent('创建.nvmrc', 'nvmrc');
-    if (!titleBar.contains(button)) {
-        const refreshBtn = titleBar.querySelector('.refresh');
-        titleBar.insertBefore(button, refreshBtn || null);
-    }
-
-    // 4. 解析版本信息
-    const version = result?.found ? result.version?.match(/(\d+(?:\.\d+){0,2})/)?.[0] : null;
-    const theSame = version === currentNodeVersion;
-    const isInstalled = version && installedVersions.includes(version);
-
-    // 5. 根据不同情况处理
-    if (!version) {
-        // 情况1: 未找到.nvmrc文件
-        tooltip.innerHTML = '未找到或为空';
-        tooltip.classList.add('error-color');
-        updateButtonState(button, 'error', '需要更新');
-        await handleNvmCommand('create-nvmrc', currentNodeVersion || '', null, false);
-        setCurrentVersionTip(false);
-    } else if (needUse && !theSame) {
-        // 情况2: 需要切换版本且当前版本与.nvmrc不一致
-        const switchSuccess = await handleNvmCommand('nvm-use', version, null, false);
-        tooltip.innerHTML = switchSuccess ? `已找到：${version}` : `${version}切换失败`;
-        tooltip.classList.add(switchSuccess ? 'success-color' : 'error-color');
-        updateButtonState(button, switchSuccess ? 'success' : 'warning', switchSuccess ? '无需更新' : version, switchSuccess ? null : 'download');
-        setCurrentVersionTip(switchSuccess);
-        renderNvmrcCheck(false); // 递归调用，但不需要再次切换
+    const tooltip = document.getElementById(sectionId).querySelector(`.content-container`);
+    const nvmrcVersion = result?.found ? result.version.match(/(\d+(\.\d+){0,2})/)?.[0] || '' : '';
+    const currentExists = currentNodeVersion && installedVersions.includes(currentNodeVersion);
+    if (useNvmrc) {
+        // 自动切换.nvmrc版本
+        const success = await handleNvmCommand('nvm-use', nvmrcVersion, null, false); // 添加第四个参数
+        tooltip.innerHTML = success ? `已自动切换至 ${nvmrcVersion}` : `自动切换失败 ${nvmrcVersion}`;
+        tooltip.className = `content-container segmentation ${success ? 'success' : 'error'}-color`;
     } else {
-        // 情况3: 其他情况
-        tooltip.innerHTML = `已找到：${version}`;
-        tooltip.classList.add('success-color');
-        updateButtonState(button,
-            isInstalled ? (theSame ? 'success' : 'warning') : 'warning',
-            isInstalled ? (theSame ? '无需更新' : '需要更新') : version,
-            isInstalled ? null : 'download'
-        );
-        setCurrentVersionTip(theSame && isInstalled);
+        // 始终更新.nvmrc为当前版本
+        const success = await handleNvmCommand('create-nvmrc', currentNodeVersion, null, false); // 添加第四个参数
+        tooltip.innerHTML = success ? `已更新为 ${currentNodeVersion}` : `同步失败${currentNodeVersion}`;
+        tooltip.className = `content-container segmentation ${success ? 'success' : 'error'}-color`;
     }
 
-    // 6. 结束加载状态
+    setCurrentVersionTip(!!currentNodeVersion);
     setLoadingState(sectionId, false);
 }
 
@@ -168,13 +136,14 @@ async function renderRecommendVersion() {
 // 2. 渲染已安装版本列表
 async function renderNvmList(clean = true) {
     const sectionId = 'nvm-list';
-    //获取数据
     setLoadingState(sectionId, true, clean);
     const { data: result } = await getData(sectionId);
     const { versions, currentVersion } = parseInstalledVersions(result);
     installedVersions = versions;
-    currentNodeVersion = currentVersion;
-    renderNvmrcCheck(false)
+    if (currentVersion) {
+        currentNodeVersion = currentVersion;
+        renderNvmrcCheck(false);
+    }
     //创建按钮
     const containerElement = document.getElementById('installed-versions-container');
     if (containerElement) {
