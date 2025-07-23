@@ -103,7 +103,6 @@ async function renderNvmrcCheck(useNvmrc = true) {
     const { data: result } = await getData(sectionId);
     const tooltip = document.getElementById(sectionId).querySelector(`.content-container`);
     const nvmrcVersion = result?.found ? result.version.match(/(\d+(\.\d+){0,2})/)?.[0] || '' : '';
-    const currentExists = currentNodeVersion && installedVersions.includes(currentNodeVersion);
     if (useNvmrc) {
         // 自动切换.nvmrc版本
         const success = await handleNvmCommand('nvm-use', nvmrcVersion, null, false); // 添加第四个参数

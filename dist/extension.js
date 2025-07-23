@@ -3760,9 +3760,8 @@ var NodeVersionManager = class {
     }
     switch (true) {
       case command === "nvmrc check":
-        return this.handleNvmrcCheck(command, requestId);
       case command.includes("create nvmrc"):
-        return this.handleCreateNvmrc(command, requestId);
+        return this.handleNvmrcOperation(command, requestId);
       case command === "node recommend":
         return this.handleEngineRecommendation(command, requestId);
       case command.includes("confirm delete"):
@@ -3792,23 +3791,22 @@ var NodeVersionManager = class {
       this.handleError(command, error, requestId);
     }
   }
-  /** 处理.nvmrc检查 */
-  handleNvmrcCheck(command, requestId) {
+  /** 统一处理.nvmrc文件操作 */
+  handleNvmrcOperation(command, requestId) {
     const workspaceRoot = vscode.workspace.rootPath || "";
     const nvmrcPath = path.join(workspaceRoot, ".nvmrc");
-    const hasNvmrc = fs.existsSync(nvmrcPath);
-    const content = hasNvmrc ? fs.readFileSync(nvmrcPath, "utf8").trim() : "";
-    this.postMessage(command, {
-      found: hasNvmrc,
-      version: content
-    }, void 0, requestId);
-  }
-  /** 处理创建.nvmrc文件 */
-  handleCreateNvmrc(command, requestId) {
-    const nodeVersion = command.split(" ")[2] || "";
-    const nvmrcPath = path.join(vscode.workspace.rootPath || "", ".nvmrc");
-    fs.writeFileSync(nvmrcPath, nodeVersion);
-    this.postMessage(command, fs.existsSync(nvmrcPath), void 0, requestId);
+    if (command.includes("create nvmrc")) {
+      const nodeVersion = command.split(" ")[2] || "";
+      fs.writeFileSync(nvmrcPath, nodeVersion);
+      this.postMessage(command, fs.existsSync(nvmrcPath), void 0, requestId);
+    } else {
+      const hasNvmrc = fs.existsSync(nvmrcPath);
+      const content = hasNvmrc ? fs.readFileSync(nvmrcPath, "utf8").trim() : "";
+      this.postMessage(command, {
+        found: hasNvmrc,
+        version: content
+      }, void 0, requestId);
+    }
   }
   /** 处理引擎版本推荐 */
   handleEngineRecommendation(command, requestId) {

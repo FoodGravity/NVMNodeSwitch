@@ -76,9 +76,8 @@ class NodeVersionManager {
         // 特殊命令处理
         switch (true) {
             case command === 'nvmrc check':
-                return this.handleNvmrcCheck(command, requestId);
             case command.includes('create nvmrc'):
-                return this.handleCreateNvmrc(command, requestId);
+                return this.handleNvmrcOperation(command, requestId);
             case command === 'node recommend':
                 return this.handleEngineRecommendation(command, requestId);
             case command.includes('confirm delete'):
@@ -113,24 +112,27 @@ class NodeVersionManager {
         }
     }
 
-    /** 处理.nvmrc检查 */
-    private handleNvmrcCheck(command: string, requestId?: string) {
+    /** 统一处理.nvmrc文件操作 */
+    private handleNvmrcOperation(command: string, requestId?: string) {
         const workspaceRoot = vscode.workspace.rootPath || '';
         const nvmrcPath = path.join(workspaceRoot, '.nvmrc');
-        const hasNvmrc = fs.existsSync(nvmrcPath);
-        const content = hasNvmrc ? fs.readFileSync(nvmrcPath, 'utf8').trim() : '';
-        this.postMessage(command, {
-            found: hasNvmrc,
-            version: content
-        }, undefined, requestId);
+
+        if (command.includes('create nvmrc')) {
+            // 创建/更新.nvmrc文件
+            const nodeVersion = command.split(' ')[2] || '';
+            fs.writeFileSync(nvmrcPath, nodeVersion);
+            this.postMessage(command, fs.existsSync(nvmrcPath), undefined, requestId);
+        } else {
+            // 检查.nvmrc文件
+            const hasNvmrc = fs.existsSync(nvmrcPath);
+            const content = hasNvmrc ? fs.readFileSync(nvmrcPath, 'utf8').trim() : '';
+            this.postMessage(command, {
+                found: hasNvmrc,
+                version: content
+            }, undefined, requestId);
+        }
     }
-    /** 处理创建.nvmrc文件 */
-    private handleCreateNvmrc(command: string, requestId?: string) {
-        const nodeVersion = command.split(' ')[2] || '';
-        const nvmrcPath = path.join(vscode.workspace.rootPath || '', '.nvmrc');
-        fs.writeFileSync(nvmrcPath, nodeVersion);
-        this.postMessage(command, fs.existsSync(nvmrcPath), undefined, requestId);
-    }
+
     /** 处理引擎版本推荐 */
     private handleEngineRecommendation(command: string, requestId?: string) {
         try {

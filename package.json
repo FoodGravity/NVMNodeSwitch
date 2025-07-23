@@ -2,7 +2,7 @@
   "name": "nvm-node-switch",
   "displayName": "NVM Node Switch",
   "description": "基于.nvmrc的Node版本自动切换工具，提供以下功能：\n- 自动检测并切换工作区.nvmrc指定版本\n- 智能推荐package.json适配的Node版本\n- 可视化管理已安装/可用Node版本（安装/切换/删除）\n- 支持nvm、nodejs官方和npmmirror多版本源\n- 提供跨平台的版本管理Webview界面",
-  "version": "0.1.18",
+  "version": "0.1.19",
   "publisher": "李学明",
   "repository": {
     "type": "git",
@@ -37,11 +37,22 @@
         }
       ]
     },
-    "commands": [],
+    "commands": [     {
+      "command": "nvm.showInstalledVersions",
+      "title": "显示已安装的 Node 版本",
+      "category": "NVM Node Switch"
+    }],
     "menus": {
       "view/item/context": [],
       "view/title": [],
-      "editor/context": []
+      "editor/context": [],
+      "statusBar/item": [
+        {
+          "command": "nvm.showInstalledVersions",
+          "when": "false",
+          "group": "statusBar"
+        }
+      ]
     }
   },
   "scripts": {
