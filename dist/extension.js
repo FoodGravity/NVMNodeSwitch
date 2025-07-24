@@ -3697,11 +3697,14 @@ __export(extension_exports, {
   deactivate: () => deactivate
 });
 module.exports = __toCommonJS(extension_exports);
-var vscode = __toESM(require("vscode"));
-var fs = __toESM(require("fs"));
-var path = __toESM(require("path"));
-var import_child_process = require("child_process");
+var vscode4 = __toESM(require("vscode"));
+
+// src/handle/processUtils.ts
+var import_child_process2 = require("child_process");
+
+// src/handle/encodingUtils.ts
 var iconv = __toESM(require_lib());
+var import_child_process = require("child_process");
 var DEFAULT_ENCODING = "GB2312";
 var CODE_PAGE_TO_ENCODING = {
   "936": "GB2312",
@@ -3715,209 +3718,433 @@ var CODE_PAGE_TO_ENCODING = {
 var decodeOutput = (buffer) => {
   return iconv.decode(buffer, DEFAULT_ENCODING).replace(/\0/g, "");
 };
-var NodeVersionManager = class {
+async function setDefaultEncoding(log) {
+  try {
+    const child = (0, import_child_process.spawn)("chcp", { shell: "cmd.exe" });
+    let output = "";
+    for await (const data of child.stdout) {
+      output += decodeOutput(data);
+    }
+    const codePage = output.match(/(\d+)/)?.[1] || "936";
+    DEFAULT_ENCODING = CODE_PAGE_TO_ENCODING[codePage] || "GB2312";
+    log(`\u9ED8\u8BA4\u7F16\u7801\u8BBE\u7F6E\u4E3A ${DEFAULT_ENCODING}`);
+  } catch (error) {
+    DEFAULT_ENCODING = "GB2312";
+    log(`\u8BBE\u7F6E\u7F16\u7801\u51FA\u9519\uFF0C\u4F7F\u7528\u9ED8\u8BA4\u7F16\u7801 ${DEFAULT_ENCODING}`);
+  }
+}
+
+// src/handle/processUtils.ts
+async function executeCommand(command) {
+  const exe = process.platform === "win32" ? `cmd.exe /c ${command}` : command;
+  const child = (0, import_child_process2.spawn)(exe, {
+    shell: process.platform === "win32" ? "cmd.exe" : true,
+    stdio: ["pipe", "pipe", "pipe"]
+  });
+  let output = "";
+  let errorOutput = "";
+  child.stdout?.on("data", (data) => {
+    output += decodeOutput(data);
+  });
+  child.stderr?.on("data", (data) => {
+    errorOutput += decodeOutput(data);
+  });
+  const exitCode = await new Promise((resolve) => {
+    child.on("close", resolve);
+  });
+  if (exitCode !== 0) {
+    throw new Error(`\u547D\u4EE4\u6267\u884C\u5931\u8D25 (${exitCode}): ${errorOutput || output}`);
+  }
+  return output;
+}
+
+// src/handle/commandHandlers.ts
+var vscode = __toESM(require("vscode"));
+var fs = __toESM(require("fs"));
+var path = __toESM(require("path"));
+
+// src/handle/dataProcessor.ts
+function parseInstalledVersions(result) {
+  const versions = [];
+  let currentVersion = "";
+  const versionRegex = /(\d+\.\d+\.\d+)/;
+  result.split("\n").filter(Boolean).forEach((line) => {
+    const trimmedLine = line.trim();
+    if (trimmedLine.includes("*")) {
+      currentVersion = trimmedLine.replace("*", "").trim().match(versionRegex)?.[0] || "";
+    }
+    const version = trimmedLine.replace("*", "").trim();
+    const match = version.match(versionRegex);
+    if (match) {
+      versions.push(match[0]);
+    }
+  });
+  return { versions, currentVersion };
+}
+function parseAvailableVersions(result) {
+  if (typeof result === "object") {
+    return {
+      "LTS": result.filter((v) => v.lts).map((v) => v.version.replace(/^v/, "")),
+      "other": result.filter((v) => !v.lts && /^\d+\.\d+\.\d+$/.test(v.version.replace(/^v/, ""))).map((v) => v.version.replace(/^v/, ""))
+    };
+  }
+  const lines = result.split("\n").filter((line) => line.trim());
+  const versions = {};
+  if (lines.length > 1) {
+    const headers = lines[0].split("|").map((col) => col.trim()).filter((col) => col && !/^-+$/.test(col));
+    return lines.slice(2).reduce((acc, line) => {
+      const columns = line.split("|").map((col) => col.trim()).filter((col) => col);
+      if (columns.length === headers.length) {
+        headers.forEach((header, index) => {
+          const version = columns[index].match(/(\d+\.\d+\.\d+)/)?.[0];
+          if (version) {
+            acc[header].push(version);
+          }
+        });
+      }
+      return acc;
+    }, Object.fromEntries(headers.map((h) => [h, []])));
+  }
+  return versions;
+}
+
+// src/handle/commandHandlers.ts
+async function handleNvmList(command) {
+  return parseInstalledVersions(await executeCommand(command));
+}
+async function handleButtonCommand(command) {
+  const result = await executeCommand(command);
+  if (/error/i.test(result)) {
+    throw new Error(result);
+  }
+  return result.match(/(\d+\.\d+\.\d+)/)?.[0];
+}
+async function handleAvailableVersions(command) {
+  const source = command.split(" ")[3];
+  if (source?.startsWith("http")) {
+    const response = await fetch(source);
+    return parseAvailableVersions(await response.json());
+  }
+  return parseAvailableVersions(await executeCommand(command));
+}
+async function handleConfirmDelete(command) {
+  const version = command.split(" ")[2];
+  const result = await vscode.window.showWarningMessage(
+    `\u786E\u5B9A\u8981\u5220\u9664Node.js\u7248\u672C ${version} \u5417?`,
+    { modal: true },
+    //弹出系统弹窗
+    "\u786E\u5B9A"
+  );
+  return result === "\u786E\u5B9A";
+}
+function handleNvmrcOperation(command) {
+  const workspaceRoot = vscode.workspace.rootPath || "";
+  const nvmrcPath = path.join(workspaceRoot, ".nvmrc");
+  if (command.includes("create nvmrc")) {
+    const nodeVersion = command.split(" ")[2] || "";
+    const normalizedVersion = nodeVersion.replace(/^v|[^\d.]/g, "").replace(/(\.)+$/, "");
+    fs.writeFileSync(nvmrcPath, normalizedVersion);
+    return fs.existsSync(nvmrcPath);
+  }
+  return {
+    found: fs.existsSync(nvmrcPath),
+    version: fs.existsSync(nvmrcPath) ? (
+      // 规范化读取的版本号 - 确保格式为 X, X.X 或 X.X.X
+      fs.readFileSync(nvmrcPath, "utf8").trim().replace(/^v|[^\d.]/g, "").replace(/(\.)+$/, "")
+    ) : ""
+  };
+}
+async function handleEngineRecommendation(command) {
+  const workspaceRoot = vscode.workspace.rootPath || "";
+  const pkgPath = path.join(workspaceRoot, "package.json");
+  if (!fs.existsSync(pkgPath))
+    return null;
+  const pkgJson = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+  return pkgJson.engines?.node?.match(/\d+\.\d+\.\d+/)?.[0];
+}
+
+// src/webviewManager.ts
+var vscode2 = __toESM(require("vscode"));
+var path2 = __toESM(require("path"));
+var fs2 = __toESM(require("fs"));
+function setupWebview(context, executeCommand2) {
+  let webviewView;
+  const postMessage = (command, data, error, requestId) => {
+    webviewView?.webview.postMessage({ command, data, error, requestId });
+  };
+  const webviewViewProvider = {
+    resolveWebviewView: (view) => {
+      webviewView = view;
+      view.webview.options = {
+        enableScripts: true,
+        localResourceRoots: [vscode2.Uri.file(path2.join(context.extensionPath, "assets"))]
+      };
+      const webviewPath = path2.join(context.extensionPath, "assets", "NVMNodeSwitch.html");
+      let htmlContent = fs2.readFileSync(webviewPath, "utf8");
+      htmlContent = htmlContent.replace(
+        /(href|src)="([^"]*)"/g,
+        (match, p1, p2) => {
+          const resourcePath = path2.join(context.extensionPath, "assets", p2);
+          const resourceUri = view.webview.asWebviewUri(vscode2.Uri.file(resourcePath));
+          return `${p1}="${resourceUri}"`;
+        }
+      );
+      view.webview.html = htmlContent;
+      const listener = view.webview.onDidReceiveMessage(
+        async (message) => {
+          await executeCommand2(message.command, message.requestId);
+        }
+      );
+      context.subscriptions.push(listener);
+    }
+  };
+  vscode2.window.registerWebviewViewProvider("NVMNodeSwitchWebview", webviewViewProvider);
+  return { postMessage };
+}
+
+// src/bottomStatus.ts
+var vscode3 = __toESM(require("vscode"));
+var BottomStatus = class {
+  statusBarItem;
+  outputChannel;
+  postMessage;
+  constructor(outputChannel) {
+    this.outputChannel = outputChannel;
+    this.statusBarItem = vscode3.window.createStatusBarItem(vscode3.StatusBarAlignment.Left, 100);
+    this.statusBarItem.command = "nvm.showVersionManager";
+  }
+  setPostMessage(postMessage) {
+    this.postMessage = postMessage;
+  }
+  /** 更新状态栏显示当前Node版本 */
+  async updateNodeVersionStatus() {
+    try {
+      const version = (await executeCommand("node -v")).trim();
+      this.statusBarItem.text = `Node: ${version || "unknown"}`;
+    } catch {
+      this.statusBarItem.text = `Node: unknown`;
+    }
+    this.statusBarItem.show();
+  }
+  /** 显示版本管理快速操作面板 */
+  async showVersionQuickPick() {
+    try {
+      this.outputChannel.appendLine("\u5F00\u59CB\u83B7\u53D6\u5DF2\u5B89\u88C5\u7684Node\u7248\u672C...");
+      const { versions, currentVersion } = await handleNvmList("nvm list");
+      this.outputChannel.appendLine(`\u83B7\u53D6\u5230${versions.length}\u4E2A\u5DF2\u5B89\u88C5\u7248\u672C\uFF0C\u5F53\u524D\u7248\u672C: ${currentVersion}`);
+      const deleteButton = this.createDeleteButton();
+      const items = this.createVersionItems(versions, currentVersion, deleteButton);
+      const quickPick = this.createQuickPick(items);
+      this.setupButtonClickHandler(quickPick, items, versions, currentVersion, deleteButton);
+      this.setupInputChangeHandler(quickPick, items);
+      const selected = await this.waitForSelection(quickPick);
+      if (!selected)
+        return;
+      if (selected.label.includes("\u5B89\u88C5")) {
+        await this.installAndSwitchVersion(selected.version);
+      } else {
+        await this.switchVersion(selected.version);
+      }
+    } catch (error) {
+      vscode3.window.showErrorMessage(`\u7248\u672C\u64CD\u4F5C\u5931\u8D25: ${error}`);
+    }
+  }
+  createDeleteButton() {
+    return {
+      iconPath: new vscode3.ThemeIcon("close"),
+      tooltip: "\u5220\u9664\u6B64\u7248\u672C"
+    };
+  }
+  createVersionItems(versions, currentVersion, deleteButton) {
+    const versionItems = versions.map((version) => ({
+      label: version === currentVersion ? `$(check) ${version}` : `$(debug-stackframe-dot) ${version}`,
+      description: version === currentVersion ? "\u5F53\u524D\u4F7F\u7528\u7248\u672C" : "\u70B9\u51FB\u5207\u6362\u5230\u6B64\u7248\u672C",
+      version,
+      buttons: [deleteButton]
+    }));
+    return [
+      {
+        label: "$(add) \u6216\u8005\u5B89\u88C5\u65B0\u7248\u672C",
+        description: "\u8F93\u5165\u7248\u672C\u53F7\u4E0B\u8F7D\u5B89\u88C5",
+        version: "",
+        buttons: [deleteButton]
+      },
+      ...versionItems
+    ];
+  }
+  createQuickPick(items) {
+    const quickPick = vscode3.window.createQuickPick();
+    quickPick.placeholder = "\u9009\u62E9Node\u7248\u672C\u6216\u8F93\u5165\u65B0\u7248\u672C\u53F7\u5B89\u88C5";
+    quickPick.items = items;
+    return quickPick;
+  }
+  setupButtonClickHandler(quickPick, items, versions, currentVersion, deleteButton) {
+    quickPick.onDidTriggerItemButton(async (event) => {
+      const item = event.item;
+      if (!item.version)
+        return;
+      const confirm = await handleConfirmDelete(`delete ${item.version}`);
+      if (!confirm)
+        return;
+      try {
+        await this.showProgress(`\u6B63\u5728\u5220\u9664Node ${item.version}`, async () => {
+          await executeCommand(`nvm uninstall ${item.version}`);
+        });
+        const index = versions.indexOf(item.version);
+        if (index > -1)
+          versions.splice(index, 1);
+        const newItems = this.createVersionItems(versions, currentVersion, deleteButton);
+        quickPick.items = newItems;
+        this.updateNodeVersionStatus();
+        this.postMessage?.("update-button-status", { activate: "nvm-uninstall", version: item.version }, void 0);
+      } catch (error) {
+        vscode3.window.showErrorMessage(`\u5220\u9664 Node ${item.version} \u5931\u8D25: ${error}`);
+      }
+    });
+  }
+  setupInputChangeHandler(quickPick, items) {
+    quickPick.onDidChangeValue((value) => {
+      const normalizedVersion = value.trim().match(/\d+(?:\.\d+)*/)?.[0] || "";
+      if (!normalizedVersion) {
+        quickPick.items = items;
+        return;
+      }
+      const filteredItems = items.filter(
+        (item) => item.version.includes(normalizedVersion) && !item.label.includes("\u5B89\u88C5")
+      );
+      quickPick.items = filteredItems.length > 0 ? filteredItems : [{
+        label: `$(add) \u5B89\u88C5 ${normalizedVersion}`,
+        description: "\u6309Enter\u5B89\u88C5\u6B64\u7248\u672C",
+        version: normalizedVersion,
+        buttons: [this.createDeleteButton()]
+      }];
+    });
+  }
+  waitForSelection(quickPick) {
+    return new Promise((resolve) => {
+      quickPick.onDidAccept(() => {
+        const activeItem = quickPick.activeItems[0];
+        resolve(activeItem);
+        quickPick.hide();
+      });
+      quickPick.show();
+    });
+  }
+  async showProgress(title, action) {
+    await vscode3.window.withProgress({
+      location: vscode3.ProgressLocation.Notification,
+      title,
+      cancellable: false
+    }, async (progress) => {
+      progress.report({ increment: 0 });
+      await action();
+      progress.report({ increment: 100 });
+    });
+  }
+  async installAndSwitchVersion(version) {
+    await this.showProgress(`\u6B63\u5728\u5B89\u88C5Node ${version}`, async () => {
+      await executeCommand(`nvm install ${version}`);
+      await executeCommand(`nvm use ${version}`);
+      handleNvmrcOperation(`create nvmrc ${version}`);
+    });
+    this.updateNodeVersionStatus();
+    this.postMessage?.("update-button-status", { activate: "nvm-use", version }, void 0);
+    await new Promise((resolve) => setTimeout(resolve, 5e3));
+  }
+  async switchVersion(version) {
+    await this.showProgress(`\u6B63\u5728\u5207\u6362\u5230Node ${version}`, async () => {
+      await executeCommand(`nvm use ${version}`);
+      handleNvmrcOperation(`create nvmrc ${version}`);
+    });
+    this.updateNodeVersionStatus();
+    this.postMessage?.("update-button-status", { activate: "nvm-use", version }, void 0);
+    await new Promise((resolve) => setTimeout(resolve, 5e3));
+  }
+  dispose() {
+    this.statusBarItem.dispose();
+  }
+};
+
+// src/extension.ts
+var NVMNodeSwitch = class {
   // 扩展上下文和输出通道
   context;
   // 输出通道，用于记录日志
   outputChannel;
+  // 私有状态barItem：vscode。状态栏项；
+  bottomStatus;
   /** 记录日志消息 */
   log(message) {
     this.outputChannel.appendLine(message);
   }
-  /// Webview视图和终端
-  webviewView;
+  /** 获取底部状态栏实例 */
+  getBottomStatus() {
+    return this.bottomStatus;
+  }
   /// 构造函数，初始化扩展上下文和输出通道
   constructor(context) {
     this.context = context;
-    this.outputChannel = vscode.window.createOutputChannel("NVMNode\u7248\u672C\u5207\u6362");
+    this.outputChannel = vscode4.window.createOutputChannel("NVMNode\u7248\u672C\u5207\u6362");
+    this.bottomStatus = new BottomStatus(this.outputChannel);
+    this.context.subscriptions.push(this.bottomStatus);
   }
+  /** 统一消息发送方法 */
+  postMessage;
   /** 激活扩展并打开Webview */
   activate() {
-    this.setDefaultEncoding();
-    this.openWebview();
-  }
-  /** 设置默认编码 */
-  async setDefaultEncoding() {
-    try {
-      const child = (0, import_child_process.spawn)("chcp", { shell: "cmd.exe" });
-      let output = "";
-      for await (const data of child.stdout) {
-        output += decodeOutput(data);
-      }
-      const codePage = output.match(/(\d+)/)?.[1] || "936";
-      DEFAULT_ENCODING = CODE_PAGE_TO_ENCODING[codePage] || "GB2312";
-      this.log(`\u9ED8\u8BA4\u7F16\u7801\u8BBE\u7F6E\u4E3A ${DEFAULT_ENCODING}`);
-    } catch (error) {
-      DEFAULT_ENCODING = "GB2312";
-      this.log(`\u8BBE\u7F6E\u7F16\u7801\u51FA\u9519\uFF0C\u4F7F\u7528\u9ED8\u8BA4\u7F16\u7801 ${DEFAULT_ENCODING}`);
-    }
+    setDefaultEncoding(this.log.bind(this));
+    const { postMessage } = setupWebview(this.context, this.executeCommand.bind(this));
+    this.postMessage = postMessage;
+    this.bottomStatus.updateNodeVersionStatus();
+    this.bottomStatus.setPostMessage(this.postMessage);
   }
   /** 执行Webview命令并返回结果 */
   async executeCommand(command, requestId) {
     this.log(`\u63A5\u6536\u547D\u4EE4${command}`);
-    if (command.includes("npmmirror") || command.includes("nodejs")) {
-      return this.handleHttpRequest(command, requestId);
-    }
-    switch (true) {
-      case command === "nvmrc check":
-      case command.includes("create nvmrc"):
-        return this.handleNvmrcOperation(command, requestId);
-      case command === "node recommend":
-        return this.handleEngineRecommendation(command, requestId);
-      case command.includes("confirm delete"):
-        return this.handleConfirmDelete(command, requestId);
-    }
-    return this.executeLocalCommand(command, requestId);
-  }
-  /** 确认删除Node.js版本 */
-  async handleConfirmDelete(command, requestId) {
-    this.log(`\u8C03\u7528\u786E\u8BA4\u6846${command}`);
-    const version = command.split(" ")[2];
-    const result = await vscode.window.showInformationMessage(
-      `\u786E\u5B9A\u8981\u5220\u9664Node.js\u7248\u672C ${version} \u5417?`,
-      { modal: true },
-      "\u786E\u5B9A"
-    );
-    this.postMessage(command, result === "\u786E\u5B9A", void 0, requestId);
-  }
-  /** 处理HTTP请求 */
-  async handleHttpRequest(command, requestId) {
-    const url = command.split(" ")[1];
     try {
-      const response = await fetch(url);
-      const jsonData = await response.json();
-      this.postMessage(command, jsonData, void 0, requestId);
-    } catch (error) {
-      this.handleError(command, error, requestId);
-    }
-  }
-  /** 统一处理.nvmrc文件操作 */
-  handleNvmrcOperation(command, requestId) {
-    const workspaceRoot = vscode.workspace.rootPath || "";
-    const nvmrcPath = path.join(workspaceRoot, ".nvmrc");
-    if (command.includes("create nvmrc")) {
-      const nodeVersion = command.split(" ")[2] || "";
-      fs.writeFileSync(nvmrcPath, nodeVersion);
-      this.postMessage(command, fs.existsSync(nvmrcPath), void 0, requestId);
-    } else {
-      const hasNvmrc = fs.existsSync(nvmrcPath);
-      const content = hasNvmrc ? fs.readFileSync(nvmrcPath, "utf8").trim() : "";
-      this.postMessage(command, {
-        found: hasNvmrc,
-        version: content
-      }, void 0, requestId);
-    }
-  }
-  /** 处理引擎版本推荐 */
-  handleEngineRecommendation(command, requestId) {
-    try {
-      const workspaceRoot = vscode.workspace.rootPath || "";
-      const pkgPath = path.join(workspaceRoot, "package.json");
-      const pkgJson = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
-      const engineVersion = pkgJson.engines?.node?.match(/\d+\.\d+\.\d+/)?.[0];
-      this.postMessage(
-        command,
-        fs.existsSync(pkgPath) ? engineVersion : null,
-        void 0,
-        requestId
-      );
-    } catch (error) {
-      this.handleError(command, error, requestId);
-    }
-  }
-  /** 执行本地命令 */
-  async executeLocalCommand(command, requestId) {
-    try {
-      const exe = process.platform === "win32" ? `cmd.exe /c ${command}` : command;
-      const child = (0, import_child_process.spawn)(exe, {
-        shell: process.platform === "win32" ? "cmd.exe" : true,
-        stdio: ["pipe", "pipe", "pipe"]
-      });
-      const { output, errorOutput, exitCode } = await this.processCommandOutput(child);
-      if (exitCode !== 0) {
-        throw new Error(`\u9000\u51FA\u7801: ${exitCode}
-${errorOutput || output}`);
+      let data;
+      if (command === "nvmrc check" || command.includes("create nvmrc")) {
+        data = await handleNvmrcOperation(command);
+      } else if (command === "node recommend") {
+        data = await handleEngineRecommendation(command);
+      } else if (command === "nvm list") {
+        data = await handleNvmList(command);
+      } else if (command.includes("nvm list available")) {
+        data = await handleAvailableVersions(command);
+      } else if (command.includes("confirm delete")) {
+        data = await handleConfirmDelete(command);
+      } else if (command.includes("nvm install")) {
+        data = await handleButtonCommand(command);
+      } else if (command.includes("nvm use") || command.includes("nvm uninstall")) {
+        data = await handleButtonCommand(command);
+        this.bottomStatus.updateNodeVersionStatus();
+      } else {
+        data = await executeCommand(command);
       }
-      this.postMessage(command, output, void 0, requestId);
-      this.log(`\u547D\u4EE4\u6267\u884C\u5B8C\u6210: ${exe}`);
+      this.postMessage(command, data, void 0, requestId);
+      return data;
     } catch (error) {
-      this.handleError(command, error, requestId);
+      const errorMessage = error instanceof Error ? error.message : "\u672A\u77E5\u9519\u8BEF";
+      this.log(`\u6267\u884C\u51FA\u9519: ${errorMessage}`);
+      this.postMessage(command, null, errorMessage, requestId);
+      throw error;
     }
   }
-  /** 统一消息发送方法 */
-  postMessage(command, data, error, requestId) {
-    this.log(`\u53D1\u9001\u6570\u636E: ${command},${data},${error},${requestId}`);
-    this.webviewView?.webview.postMessage({ command, data, error, requestId });
-  }
-  /** 统一错误处理方法 */
-  handleError(command, error, requestId) {
-    const errorMessage = error instanceof Error ? error.message : "\u672A\u77E5\u9519\u8BEF";
-    this.log(`\u6267\u884C\u51FA\u9519: ${errorMessage}`);
-    this.postMessage(command, null, errorMessage, requestId);
-  }
-  /** 处理命令输出 */
-  async processCommandOutput(child) {
-    let output = "";
-    let errorOutput = "";
-    child.stdout?.on("data", (data) => {
-      const chunk = decodeOutput(data);
-      output += chunk;
-    });
-    child.stderr?.on("data", (data) => {
-      const chunk = decodeOutput(data);
-      errorOutput += chunk;
-    });
-    const exitCode = await new Promise((resolve) => {
-      child.on("close", resolve);
-    });
-    return { output, errorOutput, exitCode };
-  }
-  /** 打开Webview视图 */
-  openWebview() {
-    const webviewViewProvider = {
-      resolveWebviewView: (webviewView, context, token) => {
-        webviewView.webview.options = {
-          enableScripts: true,
-          localResourceRoots: [vscode.Uri.file(path.join(this.context.extensionPath, "assets"))]
-        };
-        const webviewPath = path.join(this.context.extensionPath, "assets", "NVMNodeSwitch.html");
-        this.webviewView = webviewView;
-        let htmlContent = fs.readFileSync(webviewPath, "utf8");
-        htmlContent = htmlContent.replace(
-          /(href|src)="([^"]*)"/g,
-          (match, p1, p2) => {
-            const resourcePath = path.join(this.context.extensionPath, "assets", p2);
-            const resourceUri = webviewView.webview.asWebviewUri(vscode.Uri.file(resourcePath));
-            return `${p1}="${resourceUri}"`;
-          }
-        );
-        webviewView.webview.html = htmlContent;
-        if (this.webviewView) {
-          const listener = webviewView.webview.onDidReceiveMessage(
-            async (message) => {
-              await this.executeCommand(message.command, message.requestId);
-            },
-            void 0,
-            this.context.subscriptions
-          );
-          if (listener && typeof listener.dispose === "function") {
-            this.context.subscriptions.push(listener);
-          }
-        }
-      }
-    };
-    vscode.window.registerWebviewViewProvider("nodeVersionManagerWebview", webviewViewProvider);
+  /** 获取输出通道 */
+  getOutputChannel() {
+    return this.outputChannel;
   }
 };
 function activate(context) {
-  const manager = new NodeVersionManager(context);
+  const manager = new NVMNodeSwitch(context);
   manager.activate();
+  context.subscriptions.push(
+    vscode4.commands.registerCommand("nvm.showVersionManager", () => {
+      manager.getBottomStatus().showVersionQuickPick();
+    })
+  );
 }
 function deactivate() {
-  try {
-  } catch (error) {
-    console.error("\u6269\u5C55\u5378\u8F7D\u65F6\u53D1\u751F\u9519\u8BEF:", error);
-  }
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {

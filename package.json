@@ -31,26 +31,22 @@
     "views": {
       "nodeVersionManager": [
         {
-          "id": "nodeVersionManagerWebview",
+          "id": "NVMNodeSwitchWebview",
           "name": "Node 版本管理器",
           "type": "webview"
         }
       ]
     },
-    "commands": [     {
-      "command": "nvm.showInstalledVersions",
-      "title": "显示已安装的 Node 版本",
-      "category": "NVM Node Switch"
-    }],
     "menus": {
       "view/item/context": [],
       "view/title": [],
       "editor/context": [],
       "statusBar/item": [
         {
-          "command": "nvm.showInstalledVersions",
-          "when": "false",
-          "group": "statusBar"
+          "command": "nvm.showCurrentVersion",
+          "when": "true",
+          "group": "statusBar",
+          "alignment": "left"
         }
       ]
     }

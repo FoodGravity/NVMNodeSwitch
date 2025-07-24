@@ -19,7 +19,7 @@
     border-radius: 4px;
 
     animation: none;
-    
+
 }
 
 .button-icon.refresh {
@@ -36,12 +36,9 @@
 }
 
 .button-icon svg {
-    width: 14px;
-    height: 14px;
-    stroke: var(--vscode-icon-foreground);
     padding: 4px;
-    stroke: currentColor;
     transition: transform 0.2s;
+    stroke: "currentColor";
 }
 
 .button-icon.loading svg {
@@ -59,4 +56,3 @@
         transform: rotate(360deg);
     }
 }
-

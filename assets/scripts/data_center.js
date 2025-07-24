@@ -1,7 +1,6 @@
 // 获取VSCode API
 const vscode = acquireVsCodeApi();
 
-
 // 获取数据的主要方法
 function getData(sectionId, params) {
     const command = this.resolveCommand(sectionId, params);
@@ -17,12 +16,12 @@ function getData(sectionId, params) {
 
 // 解析命令，根据sectionId获取对应命令
 function resolveCommand(sectionId, params) {
-    // 特殊处理nvm-list-available
+    // 特殊处理nvm-list-available命令
     if (sectionId === 'nvm-list-available') {
-        return document.getElementById('version-source').value;
+        return `nvm list available ${document.getElementById('version-source').value || ''}`.trim();
     }
-    
-    // 通用处理：将sectionId转换为命令格式
+
+    // 通用处理：将连字符替换为空格并附加参数
     return sectionId.replace(/-/g, ' ') + (params ? ` ${params}` : '');
 }
 
@@ -117,23 +116,21 @@ function setRequestTimeout(sectionId, command, requestObj, resolve) {
 
     requestObj.timeoutId = timeoutId;
 }
-
-//获取测试区域的按钮
-const testButtons = document.getElementById('test-title-bar').querySelectorAll('.node-version-button');
-testButtons.forEach(button => {
-    button.addEventListener('click', async () => {
-        const sectionId = button.textContent;
-        try {
-            // 显示加载状态
-            document.getElementById('test-output').textContent = `正在执行 ${sectionId}...`;
-
-            // 获取数据
-            let result = await getData('nvm-list-available');
-            result = await getData(sectionId);
-            // 显示结果
-            document.getElementById('test-output1').textContent = JSON.stringify(result);
-        } catch (error) {
-            document.getElementById('test-output1').textContent = `执行 ${sectionId} 出错: ${error.message}`;
+// 监听消息
+window.addEventListener('message', async (event) => {
+    const { command, data } = event.data;
+    if (command === 'update-button-status') {
+        const { activate, version } = data;
+        if (activate === 'nvm-use') {
+            currentNodeVersion = version;
+            resetCurrentButtons();
+            setVersionButtonState(version, 'current');
+        } else if (activate === 'nvm-uninstall') {
+            if (version === currentNodeVersion) {
+                currentNodeVersion = '';
+            }
+            removeNonTableVersionButtons(version);
+            setVersionButtonState(version, 'table');
         }
-    });
+    }
 });

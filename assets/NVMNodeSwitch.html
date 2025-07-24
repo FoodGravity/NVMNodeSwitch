@@ -12,18 +12,6 @@
 
 <body>
     <div class="container">
-        <div id="test" style="display: none;">测试区域
-            <div class="title-bar" id="test-title-bar">
-                <button class="node-version-button">nvm-v</button>
-                <button class="node-version-button">nvmrc-check</button>
-                <button class="node-version-button">create-nvmrc</button>
-                <button class="node-version-button">node-recommend</button>
-                <button class="node-version-button">nvm-list</button>
-                <button class="node-version-button">nvm-list-available</button>
-            </div>
-            <div id="test-output1">测试输出将显示在这里</div>
-            <div id="test-output2">测试输出将显示在这里</div>
-        </div>
         <div class="section" id="nvm-v">
             <div class="title-bar">
                 <div>NVM版本:</div>
@@ -57,9 +45,9 @@
             <div class="title-bar">
                 <div class="segmentation">可用的 Node 版本:</div>
                 <select id="version-source" class="node-version-button source-selector">
-                    <option value="nvm list available">从nvm获取</option>
-                    <option value="nodejs https://nodejs.org/dist/index.json'">从nodejs获取</option>
-                    <option value="npmmirror https://npmmirror.com/mirrors/node/index.json">从npmmirror获取</option>
+                    <option>从nvm获取</option>
+                    <option value="https://nodejs.org/dist/index.json">从nodejs获取</option>
+                    <option value="https://cdn.npmmirror.com/binaries/node/index.json">从npmmirror获取</option>
                 </select>
             </div>
             <div class="content-container table-container" id="available-versions-container"></div>

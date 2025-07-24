@@ -24,9 +24,6 @@ function createButtonComponent(text, state) {
             command = 'nvm-install';
         } else if (button.classList.contains('installed')) {
             command = 'nvm-use';
-        } else if (button.classList.contains('nvmrc')) {
-            command = 'create-nvmrc';
-            version = currentNodeVersion || '';
         }
 
         if (command) {
@@ -44,47 +41,31 @@ async function handleNvmCommand(command, version, button = null, refreshList = t
     const { data, error } = await getData(command, version);
 
     // 统一错误处理
-    const errorMessage = String(data || '');
-    if (error || (data && (errorMessage.includes('error') || errorMessage.includes('Error')))) {
+    if (error) {
         if (button) updateButtonState(button, 'error');
         console.error('命令执行失败:', error || data);
         return false;
     }
-    // 从返回数据中提取版本号
-    let versionFromResponse = version;
-    if (data) {
-        const dataStr = String(data); // 确保转换为字符串
-        const versionMatch = dataStr.match(/(\d+\.\d+\.\d+)/);
-        if (versionMatch) {
-            versionFromResponse = versionMatch[0];
-            console.log('返回的版本号', versionFromResponse);
-        }
-    }
-
-
     // 根据命令类型处理
     const actions = {
         'nvm-uninstall': () => {
-            removeNonTableVersionButtons(version);
-            setVersionButtonState(versionFromResponse, 'table');
+            removeNonTableVersionButtons(data);
+            setVersionButtonState(data, 'table');
         },
         'nvm-use': () => {
             resetCurrentButtons();
-            setVersionButtonState(versionFromResponse, 'current');
+            setVersionButtonState(data, 'current');
+            if (!refreshList) currentNodeVersion = data;
         },
         'nvm-install': () => {
             if (button) updateButtonState(button, 'installed');
         },
-        'create-nvmrc': () => {
-            if (button) updateButtonState(button, 'success');
-        },
         'confirm-delete': () => {
-            if (data) {
+            if (data) {//data为布尔，此时不能用返回的数据为版本号
                 handleNvmCommand('nvm-uninstall', version, button);
             } else {
                 autoSetVersionButtonState(version);
             }
-            refreshList = false
             return true;
         }
     };

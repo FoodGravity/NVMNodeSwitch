@@ -2,120 +2,50 @@
 // 公共变量
 let currentNodeVersion = '';
 let installedVersions = [];
-// 2. 解析已安装版本
-function parseInstalledVersions(result) {
-    const versions = [];
-    let currentVersion = '';
-    const versionRegex = /(\d+\.\d+\.\d+)/;
-
-    result.split('\n').filter(Boolean).forEach(line => {
-        const trimmedLine = line.trim();
-        if (trimmedLine.includes('*')) {
-            currentVersion = trimmedLine.replace('*', '').trim().match(versionRegex)?.[0] || '';
-        }
-        const version = trimmedLine.replace('*', '').trim();
-        const match = version.match(versionRegex);
-        if (match) { versions.push(match[0]); }
-    });
-
-    return { versions, currentVersion };
-}
-// 3. 解析可用版本
-function parseAvailableVersions(result) {
-    //如果result为对象
-    if (typeof result === 'object') {
-        return {
-            'LTS': result
-                .filter(v => v.lts)
-                .map(v => v.version.replace(/^v/, '')),
-            'other': result
-                .filter(v => !v.lts && /^\d+\.\d+\.\d+$/.test(v.version.replace(/^v/, '')))
-                .map(v => v.version.replace(/^v/, ''))
-        };
-    }
-    const lines = result.split('\n').filter(line => line.trim());
-    const versions = {};
-
-    if (lines.length > 1) {
-        // 使用更高效的数组操作方法
-        const headers = lines[0].split('|')
-            .map(col => col.trim())
-            .filter(col => col && !/^-+$/.test(col)); // 过滤掉表头中的分隔线
-
-        // 使用reduce优化数据收集
-        return lines.slice(2).reduce((acc, line) => {
-            const columns = line.split('|')
-                .map(col => col.trim())
-                .filter(col => col);
-
-            if (columns.length === headers.length) {
-                headers.forEach((header, index) => {
-                    const version = columns[index].match(/(\d+\.\d+\.\d+)/)?.[0];
-                    if (version) { acc[header].push(version); }
-                });
-            }
-            return acc;
-        }, Object.fromEntries(headers.map(h => [h, []])));
-    }
-
-    return versions;
-}
-//版本源切换处理
-document.getElementById('version-source').addEventListener('change', function () {
-    renderNvmAvailable();
-});
-
 
 // 渲染 NVM 状态
-async function renderNvmV() {
+async function renderNvmV(nvmV) {
     const sectionId = 'nvm-v';
-    const nvmVElement = document.getElementById(sectionId);
-    if (nvmVElement) {
+    const sElement = document.getElementById(sectionId);
+    if (sElement) {
         setLoadingState(sectionId, true);
-        const { data: nvmV } = await getData(sectionId);  // 修改这里
+        nvmV ??= (await getData(sectionId)).data;
         //是否为版本号
         if (nvmV) {
-            setAllSectionsToNone(false);
-            nvmVElement.querySelector('.content-container').innerHTML = `${nvmV}`;
+            sElement.querySelector('.content-container').innerHTML = `${nvmV}`;
             // 自动获取其他数据 
             await renderNvmrcCheck();
             renderRecommendVersion()
             await renderNvmList();
             await renderNvmAvailable();
         } else {
-            setAllSectionsToNone(true);
-            nvmVElement.querySelector('.content-container').innerHTML = '未安装，请下载安装: <a href="https://github.com/coreybutler/nvm-windows/releases" target="_blank">nvm-windows 官方下载</a>';
+            setAllSectionsToNone();
+            sElement.querySelector('.content-container').innerHTML = '未安装，请下载安装: <a href="https://github.com/coreybutler/nvm-windows/releases" target="_blank">nvm-windows 官方下载</a>';
         }
         setLoadingState(sectionId, false);
     }
 }
-// 更新当前版本提示语
-async function setCurrentVersionTip(isSuccess) {
-    const currentVersionText = document.querySelector('.current-version');
-    currentVersionText.innerHTML = currentNodeVersion ? `当前版本：${currentNodeVersion}` : '未选择版本';
-    currentVersionText.className = 'segmentation current-version';
-    currentVersionText.classList.add(currentNodeVersion ? isSuccess ? 'success-color' : 'warning-color' : 'error-color');
-}
+
 // 设置nvmrc检查结果
-async function renderNvmrcCheck(useNvmrc = true) {
+async function renderNvmrcCheck(udataNvmrc) {
     const sectionId = 'nvmrc-check';
     setLoadingState(sectionId, true);
     const { data: result } = await getData(sectionId);
     const tooltip = document.getElementById(sectionId).querySelector(`.content-container`);
-    const nvmrcVersion = result?.found ? result.version.match(/(\d+(\.\d+){0,2})/)?.[0] || '' : '';
-    if (useNvmrc) {
-        // 自动切换.nvmrc版本
-        const success = await handleNvmCommand('nvm-use', nvmrcVersion, null, false); // 添加第四个参数
-        tooltip.innerHTML = success ? `已自动切换至 ${nvmrcVersion}` : `自动切换失败 ${nvmrcVersion}`;
-        tooltip.className = `content-container segmentation ${success ? 'success' : 'error'}-color`;
-    } else {
+    const nvmrcVersion = result?.found ? result.version : '';
+    if (udataNvmrc) {
         // 始终更新.nvmrc为当前版本
-        const success = await handleNvmCommand('create-nvmrc', currentNodeVersion, null, false); // 添加第四个参数
+        const success = await handleNvmCommand('create-nvmrc', currentNodeVersion, null, false);
         tooltip.innerHTML = success ? `已更新为 ${currentNodeVersion}` : `同步失败${currentNodeVersion}`;
         tooltip.className = `content-container segmentation ${success ? 'success' : 'error'}-color`;
+    } else {
+        // 自动切换.nvmrc版本
+        const success = await handleNvmCommand('nvm-use', nvmrcVersion, null, false);
+        tooltip.innerHTML = success ? `已自动切换至 ${nvmrcVersion}` : `自动切换失败 ${nvmrcVersion}`;
+        tooltip.className = `content-container segmentation ${success ? 'success' : 'error'}-color`;
+
     }
 
-    setCurrentVersionTip(!!currentNodeVersion);
     setLoadingState(sectionId, false);
 }
 
@@ -133,16 +63,13 @@ async function renderRecommendVersion() {
 }
 
 // 2. 渲染已安装版本列表
-async function renderNvmList(clean = true) {
+async function renderNvmList(clean = true, result) {
     const sectionId = 'nvm-list';
     setLoadingState(sectionId, true, clean);
-    const { data: result } = await getData(sectionId);
-    const { versions, currentVersion } = parseInstalledVersions(result);
-    installedVersions = versions;
-    if (currentVersion) {
-        currentNodeVersion = currentVersion;
-        renderNvmrcCheck(false);
-    }
+    result ??= (await getData(sectionId)).data;
+    installedVersions = result.versions;
+    currentNodeVersion = result.currentVersion;
+    if (currentNodeVersion) { await renderNvmrcCheck(true); }
     //创建按钮
     const containerElement = document.getElementById('installed-versions-container');
     if (containerElement) {
@@ -160,11 +87,10 @@ async function renderNvmList(clean = true) {
     setLoadingState(sectionId, false);
 }
 // 3. 渲染可用版本列表
-async function renderNvmAvailable() {
+async function renderNvmAvailable(clean = true, availableVersions) {
     const sectionId = 'nvm-list-available';
-    setLoadingState(sectionId, true);
-    const { data: result } = await getData(sectionId);
-    const availableVersions = parseAvailableVersions(result);
+    setLoadingState(sectionId, true, clean);
+    availableVersions ??= (await getData(sectionId)).data;
     const elementsContainer = document.querySelector('.table-container');
     if (elementsContainer) {
         elementsContainer.innerHTML = '';
@@ -209,27 +135,36 @@ async function renderNvmAvailable() {
     setLoadingState(sectionId, false);
 }
 
-// 2\3. 提取公共函数处理版本按钮创建
+
+//以下为辅助函数
+
+//版本源切换处理
+document.getElementById('version-source').addEventListener('change', function () {
+    renderNvmAvailable();
+});
+
+// 2\3. 处理版本按钮创建
 function createVersionButton(version, inTable) {
     // 根据参数自动判断状态
     const state = (inTable ? 'table.' : '') + (version === currentNodeVersion ? 'current' : installedVersions.includes(version) ? 'installed' : 'table');
     return createButtonComponent(version, state);
 }
 
-//设置所有非nvm-v版块的display属性
-function setAllSectionsToNone(isNone) {
-    const sections = document.querySelectorAll('.section');
-    sections.forEach(section => {
-        if (section.id !== 'nvm-v') {
-            section.style.display = isNone ? 'none' : 'flex';
-        }
-    });
+//设置所有版块的display属性为none
+function setAllSectionsToNone() {
+    document.querySelectorAll('.section').forEach(section => section.style.display = 'none');
 }
 
+//显示section
+function showSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    if (section) { section.style.display = 'flex'; }
+}
+//设置section的loading状态
 function setLoadingState(sectionId, isLoading, clean = true) {
     const section = document.getElementById(sectionId);
     if (!section) return;
-
+    showSection(sectionId);
     const container = section.querySelector('.content-container');
     const refreshBtn = section.querySelector(`#refresh-${sectionId}`);
 
@@ -269,7 +204,7 @@ function createAllRefreshButtons() {
 function initializePage() {
     console.log('页面初始化开始');
     createAllRefreshButtons();
-    setAllSectionsToNone(true);
+    setAllSectionsToNone();
     renderNvmV();
 }
 
