@@ -10,73 +10,29 @@ function createButtonComponent(text, state) {
     // 点击事件处理
     button.addEventListener('click', async (event) => {
         let command;
-        let version = button.getAttribute('data');
-        let localButton = button;
+        let state = 'downloading';
+        const iconState = 'loading';
         //如果点击的是图标且图标是删除图标
-        if (event.target.closest('.button-icon')) {
-            if (event.target.closest('.button-icon').classList.contains('delete')) {
-                command = 'confirm-delete';
-            } else if (event.target.closest('.button-icon').classList.contains('confirm')) {
-                event.stopPropagation();
-                command = 'nvm-uninstall';
-            }
+        const icon = event.target.closest('.button-icon');
+        if (icon && icon.classList.contains('delete')) {
+            command = 'nvm-uninstall';
+            state = 'warning';
         } else if (button.querySelector('.button-icon').classList.contains('download')) {
             command = 'nvm-install';
         } else if (button.classList.contains('installed')) {
             command = 'nvm-use';
         }
-
         if (command) {
-            await handleNvmCommand(command, version, localButton);
+            updateButtonState(button, state, iconState);
+            getData(command, button.getAttribute('data'));
+
         } else {
             console.log('未触发命令');
         }
     });
     return button;
 }
-async function handleNvmCommand(command, version, button = null, refreshList = true) {
-    // 统一设置下载状态
-    if (button) updateButtonState(button, command == 'confirm-delete' ? 'confirm' : 'downloading');
 
-    const { data, error } = await getData(command, version);
-
-    // 统一错误处理
-    if (error) {
-        if (button) updateButtonState(button, 'error');
-        console.error('命令执行失败:', error || data);
-        return false;
-    }
-    // 根据命令类型处理
-    const actions = {
-        'nvm-uninstall': () => {
-            removeNonTableVersionButtons(data);
-            setVersionButtonState(data, 'table');
-        },
-        'nvm-use': () => {
-            resetCurrentButtons();
-            setVersionButtonState(data, 'current');
-            if (!refreshList) currentNodeVersion = data;
-        },
-        'nvm-install': () => {
-            if (button) updateButtonState(button, 'installed');
-        },
-        'confirm-delete': () => {
-            if (data) {//data为布尔，此时不能用返回的数据为版本号
-                handleNvmCommand('nvm-uninstall', version, button);
-            } else {
-                autoSetVersionButtonState(version);
-            }
-            return true;
-        }
-    };
-
-    if (actions[command]) {
-        actions[command]();
-        if (refreshList) renderNvmList(false);
-    }
-
-    return true;
-}
 // 状态图标映射
 const BUTTON_ICONS = {
     table: 'download',
@@ -89,16 +45,10 @@ const BUTTON_ICONS = {
     warning: 'warning',
     // nvmrc: 'download'
 };
-function updateButtonState(button, state, text, iconState) {
-    // 更新按钮文本
-    if (text) {
-        button.textContent = text;
-        button.setAttribute('data', text);
-    }
-
+function updateButtonState(button, state, iconState) {
     if (button.classList.contains('table')) { state = 'table.' + state; }
     if (button.classList.contains('nvmrc')) { state = 'nvmrc.' + state; }
-    console.log('更新按钮状态:', state, text, iconState);
+    console.log('更新按钮状态:', state, iconState);
     // 完全重置所有状态类名
     const allStates = Object.keys(BUTTON_ICONS);
     button.classList.remove(...allStates);
@@ -136,11 +86,12 @@ function resetCurrentButtons() {
     });
 }
 //设置指定版本的按钮状态
-function setVersionButtonState(version, state) {
+function setVersionButtonState(version, state, iconState) {
     console.log('设置版本按钮状态:', version, state);
     const versionButtons = document.querySelectorAll(`.node-version-button[data="${version}"]`);
     versionButtons.forEach(button => {
-        updateButtonState(button, state);
+        updateButtonState(button, state, iconState);
+
     });
 }
 //移除指定版本的非table按钮

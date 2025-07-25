@@ -8,57 +8,47 @@ async function renderNvmV(nvmV) {
     const sectionId = 'nvm-v';
     const sElement = document.getElementById(sectionId);
     if (sElement) {
-        setLoadingState(sectionId, true);
-        nvmV ??= (await getData(sectionId)).data;
+        setLoadingState(sectionId);
         //是否为版本号
         if (nvmV) {
+            setAllSectionsToNone(false);
             sElement.querySelector('.content-container').innerHTML = `${nvmV}`;
-            // 自动获取其他数据 
-            await renderNvmrcCheck();
-            renderRecommendVersion()
-            await renderNvmList();
-            await renderNvmAvailable();
         } else {
             setAllSectionsToNone();
-            sElement.querySelector('.content-container').innerHTML = '未安装，请下载安装: <a href="https://github.com/coreybutler/nvm-windows/releases" target="_blank">nvm-windows 官方下载</a>';
+            sElement.querySelector('.content-container').innerHTML = '<a href="https://github.com/coreybutler/nvm-windows/releases" target="_blank">下载nvm-windows</a>';
         }
         setLoadingState(sectionId, false);
     }
 }
 
 // 设置nvmrc检查结果
-async function renderNvmrcCheck(udataNvmrc) {
+async function renderNvmrcCheck(data) {
     const sectionId = 'nvmrc-check';
-    setLoadingState(sectionId, true);
-    const { data: result } = await getData(sectionId);
+    setLoadingState(sectionId);
     const tooltip = document.getElementById(sectionId).querySelector(`.content-container`);
-    const nvmrcVersion = result?.found ? result.version : '';
-    if (udataNvmrc) {
-        // 始终更新.nvmrc为当前版本
-        const success = await handleNvmCommand('create-nvmrc', currentNodeVersion, null, false);
-        tooltip.innerHTML = success ? `已更新为 ${currentNodeVersion}` : `同步失败${currentNodeVersion}`;
-        tooltip.className = `content-container segmentation ${success ? 'success' : 'error'}-color`;
-    } else {
-        // 自动切换.nvmrc版本
-        const success = await handleNvmCommand('nvm-use', nvmrcVersion, null, false);
-        tooltip.innerHTML = success ? `已自动切换至 ${nvmrcVersion}` : `自动切换失败 ${nvmrcVersion}`;
-        tooltip.className = `content-container segmentation ${success ? 'success' : 'error'}-color`;
 
-    }
+    // 使用解构和条件简写
+    const { found, version } = data || {};
+    const [message, colorClass] = found
+        ? version
+            ? [version, 'success-color']
+            : ['版本为空', 'warning-color']
+        : ['未找到', 'error-color'];
+
+    tooltip.innerHTML = message;
+    tooltip.className = `content-container segmentation ${colorClass}`;
 
     setLoadingState(sectionId, false);
 }
 
 
 // 推荐版本
-async function renderRecommendVersion() {
+async function renderRecommendVersion(data) {
     const sectionId = 'node-recommend';
     setLoadingState(sectionId);
     const container = document.getElementById(sectionId).querySelector('.content-container');
-    const { data: result } = await getData(sectionId);
-    container.innerHTML = result ?
-        `推荐使用版本：<span class="recommended-version">${result}</span>` :
-        '无推荐版本';
+    container.innerHTML = data ? `推荐使用版本：${data}` : '无推荐版本';
+    container.className = `content-container segmentation ${hasRecommend ? 'success' : 'warning'}-color`;
     setLoadingState(sectionId, false);
 }
 
@@ -66,7 +56,6 @@ async function renderRecommendVersion() {
 async function renderNvmList(clean = true, result) {
     const sectionId = 'nvm-list';
     setLoadingState(sectionId, true, clean);
-    result ??= (await getData(sectionId)).data;
     installedVersions = result.versions;
     currentNodeVersion = result.currentVersion;
     if (currentNodeVersion) { await renderNvmrcCheck(true); }
@@ -90,7 +79,6 @@ async function renderNvmList(clean = true, result) {
 async function renderNvmAvailable(clean = true, availableVersions) {
     const sectionId = 'nvm-list-available';
     setLoadingState(sectionId, true, clean);
-    availableVersions ??= (await getData(sectionId)).data;
     const elementsContainer = document.querySelector('.table-container');
     if (elementsContainer) {
         elementsContainer.innerHTML = '';
@@ -140,7 +128,7 @@ async function renderNvmAvailable(clean = true, availableVersions) {
 
 //版本源切换处理
 document.getElementById('version-source').addEventListener('change', function () {
-    renderNvmAvailable();
+
 });
 
 // 2\3. 处理版本按钮创建
@@ -151,8 +139,13 @@ function createVersionButton(version, inTable) {
 }
 
 //设置所有版块的display属性为none
-function setAllSectionsToNone() {
-    document.querySelectorAll('.section').forEach(section => section.style.display = 'none');
+function setAllSectionsToNone(isNone = true) {
+    document.querySelectorAll('.section').forEach(section => {
+        if (isNone) { setLoadingState(section.id); }
+        if (section.id !== 'nvm-v') {
+            section.style.display = isNone ? 'none' : 'flex';
+        }
+    });
 }
 
 //显示section
@@ -161,10 +154,9 @@ function showSection(sectionId) {
     if (section) { section.style.display = 'flex'; }
 }
 //设置section的loading状态
-function setLoadingState(sectionId, isLoading, clean = true) {
+function setLoadingState(sectionId, isLoading = true, clean = true) {
     const section = document.getElementById(sectionId);
     if (!section) return;
-    showSection(sectionId);
     const container = section.querySelector('.content-container');
     const refreshBtn = section.querySelector(`#refresh-${sectionId}`);
 
@@ -185,15 +177,12 @@ function createAllRefreshButtons() {
         const refreshBtn = createSvgButton('refresh', `refresh-${section.id}`);
         refreshBtn.classList.add('refresh');
         refreshBtn.addEventListener('click', async () => {
-            const renderFunctions = {
-                'node-recommend': renderRecommendVersion,
-                'nvm-list': renderNvmList,
-                'nvm-list-available': renderNvmAvailable,
-                'nvm-v': renderNvmV,
-                'nvmrc-check': renderNvmrcCheck
-            };
-            if (renderFunctions[section.id]) {
-                await renderFunctions[section.id]();
+            if (section.id === 'nvm-v') {
+                setAllSectionsToNone();
+                getData('all');
+            } else {
+                setLoadingState(section.id);
+                getData(section.id);
             }
         });
         titleBar.appendChild(refreshBtn);
@@ -205,7 +194,8 @@ function initializePage() {
     console.log('页面初始化开始');
     createAllRefreshButtons();
     setAllSectionsToNone();
-    renderNvmV();
+    getData('initall');
+    // renderNvmV();
 }
 
 if (document.readyState === 'loading') {

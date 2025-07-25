@@ -2,7 +2,7 @@ import { ChildProcess, spawn } from 'child_process';
 import { decodeOutput } from './encodingUtils';
 
 /** 执行命令并返回输出结果 */
-export async function executeCommand(command: string) {
+export async function localExecuteCommand(command: string) {
     const exe = process.platform === 'win32' ? `cmd.exe /c ${command}` : command;
     const child = spawn(exe, {
         shell: process.platform === 'win32' ? 'cmd.exe' : true,

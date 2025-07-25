@@ -1,36 +1,29 @@
 import * as vscode from 'vscode';
-import { executeCommand } from './handle/processUtils';
-import { handleNvmList, handleNvmrcOperation, handleConfirmDelete } from './handle/commandHandlers';
-
+import { localExecuteCommand } from './handle/processUtils';
+import type { NVMNodeSwitch } from './extension';
 // 定义自定义 QuickPickItem 类型
 interface CustomQuickPickItem extends vscode.QuickPickItem {
     version: string;
     buttons: vscode.QuickInputButton[];
 }
-
-// 定义 postMessage 函数类型
-type PostMessage = (command: string, data: any, error?: string, requestId?: string) => void;
-
-export class BottomStatus {
+export class BottomBar implements vscode.Disposable {
     private statusBarItem: vscode.StatusBarItem;
-    private outputChannel: vscode.OutputChannel;
-    private postMessage?: PostMessage;
-
-    constructor(outputChannel: vscode.OutputChannel) {
-        this.outputChannel = outputChannel;
+    private manager: NVMNodeSwitch;
+    private commandDisposable: vscode.Disposable;
+    constructor(manager: NVMNodeSwitch) {
+        this.manager = manager;
         // 创建状态栏项
         this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
         this.statusBarItem.command = 'nvm.showVersionManager';
-    }
-
-    public setPostMessage(postMessage: PostMessage) {
-        this.postMessage = postMessage;
+        this.commandDisposable = vscode.commands.registerCommand('nvm.showVersionManager', () => {
+            this.showVersionQuickPick();
+        });
     }
 
     /** 更新状态栏显示当前Node版本 */
     public async updateNodeVersionStatus() {
         try {
-            const version = (await executeCommand('node -v')).trim();
+            const version = (await localExecuteCommand('node -v')).trim();
             this.statusBarItem.text = `Node: ${version || 'unknown'}`;
         } catch {
             this.statusBarItem.text = `Node: unknown`;
@@ -41,9 +34,9 @@ export class BottomStatus {
     /** 显示版本管理快速操作面板 */
     public async showVersionQuickPick() {
         try {
-            this.outputChannel.appendLine('开始获取已安装的Node版本...');
-            const { versions, currentVersion } = await handleNvmList('nvm list');
-            this.outputChannel.appendLine(`获取到${versions.length}个已安装版本，当前版本: ${currentVersion}`);
+            this.manager.outputChannel.appendLine('开始获取已安装的Node版本...');
+            const { versions, currentVersion } = await this.manager.executeCommand('nvm-list');;
+            this.manager.outputChannel.appendLine(`获取到${versions.length}个已安装版本，当前版本: ${currentVersion}`);
 
             const deleteButton = this.createDeleteButton();
             const items = this.createVersionItems(versions, currentVersion, deleteButton);
@@ -112,26 +105,9 @@ export class BottomStatus {
         quickPick.onDidTriggerItemButton(async (event) => {
             const item = event.item as CustomQuickPickItem;
             if (!item.version) return;
-
-            const confirm = await handleConfirmDelete(`delete ${item.version}`);
-            if (!confirm) return;
-
-            try {
-                await this.showProgress(`正在删除Node ${item.version}`, async () => {
-                    await executeCommand(`nvm uninstall ${item.version}`);
-                });
-
-                const index = versions.indexOf(item.version);
-                if (index > -1) versions.splice(index, 1);
-
-                const newItems = this.createVersionItems(versions, currentVersion, deleteButton);
-                quickPick.items = newItems;
-
-                this.updateNodeVersionStatus();
-                this.postMessage?.('update-button-status', { activate: 'nvm-uninstall', version: item.version }, undefined);
-            } catch (error) {
-                vscode.window.showErrorMessage(`删除 Node ${item.version} 失败: ${error}`);
-            }
+            this.manager.webview.postMessage('buttonLoading', item.version, 'delete')
+            const confirm = await this.manager.executeCommand('nvm-uninstall', item.version);
+            if (!confirm.delete) return;
         });
     }
 
@@ -188,26 +164,25 @@ export class BottomStatus {
 
     private async installAndSwitchVersion(version: string) {
         await this.showProgress(`正在安装Node ${version}`, async () => {
-            await executeCommand(`nvm install ${version}`);
-            await executeCommand(`nvm use ${version}`);
-            handleNvmrcOperation(`create nvmrc ${version}`);
+            this.manager.webview.postMessage('buttonLoading', version, version)
+            await this.manager.executeCommand('nvm-install', version);
+            await this.manager.executeCommand('create-nvmrc', version);
         });
-        this.updateNodeVersionStatus();
-        this.postMessage?.('update-button-status', { activate: 'nvm-use', version }, undefined);
         await new Promise(resolve => setTimeout(resolve, 5000));
     }
 
     private async switchVersion(version: string) {
         await this.showProgress(`正在切换到Node ${version}`, async () => {
-            await executeCommand(`nvm use ${version}`);
-            handleNvmrcOperation(`create nvmrc ${version}`);
+            this.manager.webview.postMessage('buttonLoading', version, version)
+            await this.manager.executeCommand('nvm-use', version);
+            await this.manager.executeCommand('create-nvmrc', version);
+
         });
-        this.updateNodeVersionStatus();
-        this.postMessage?.('update-button-status', { activate: 'nvm-use', version }, undefined);
         await new Promise(resolve => setTimeout(resolve, 5000));
     }
 
     public dispose() {
         this.statusBarItem.dispose();
+        this.commandDisposable.dispose();
     }
 }

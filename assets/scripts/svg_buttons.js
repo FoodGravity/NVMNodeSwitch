@@ -8,9 +8,9 @@ const icons = {
     <line x1="6" y1="6" x2="18" y2="18"></line>
     </svg>`,
     download: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-    <polyline points="6.89 11.55 12 16.59 17.11 11.55"/>
-    <line x1="12" y1="16" x2="12" y2="2"/>
-    <path d="M21,15h0c0,3.31-2.24,6-5,6H8c-2.76,0-5-2.69-5-6h0"/>
+    <polyline points="6.89 10.55 12 15.59 17.11 10.55"/>
+    <line x1="12" y1="16" x2="12" y2="3"/>
+    <path d="M20,15h0c0,2.76-1.99,5-4.44,5h-7.11c-2.45,0-4.44-2.24-4.44-5h0"/>
     </svg>`,
     error: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
     <circle cx="12" cy="12" r="9"/>
