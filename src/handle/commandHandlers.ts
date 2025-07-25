@@ -25,7 +25,7 @@ export function handleNvmrcOperation(sectionId: string, version?: string) {
 export async function handleEngineRecommendation() {
     const workspaceRoot = vscode.workspace.rootPath || '';
     const pkgPath = path.join(workspaceRoot, 'package.json');
-    if (!fs.existsSync(pkgPath)) return null;
+    if (!fs.existsSync(pkgPath)) { return null; }
 
     const pkgJson = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
     return pkgJson.engines?.node?.match(/\d+\.\d+\.\d+/)?.[0];
@@ -63,8 +63,8 @@ export async function handleConfirmDelete(version?: string) {
     let data = {
         delete: false,
         version: version
-    }
-    if (result !== '确定') return data;
+    };
+    if (result !== '确定') { return data; }
 
     try {
         await vscode.window.withProgress({
@@ -73,11 +73,11 @@ export async function handleConfirmDelete(version?: string) {
             cancellable: false
         }, () => localExecuteCommand(`nvm uninstall ${version}`));
 
-        vscode.window.showInformationMessage(`Node ${version} 删除成功`);
+        vscode.window.showInformationMessage(`Node ${version} 删除成功`, { timeout: 5000 } as any);
         data.delete = true;
         return data;
     } catch (error) {
-        vscode.window.showErrorMessage(`删除 Node ${version} 失败: ${error}`);
+        vscode.window.showErrorMessage(`删除 Node ${version} 失败: ${error}`, { timeout: 5000 } as any);
         return data;
     }
 }

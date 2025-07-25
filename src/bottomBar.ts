@@ -46,7 +46,7 @@ export class BottomBar implements vscode.Disposable {
             this.setupInputChangeHandler(quickPick, items);
 
             const selected = await this.waitForSelection(quickPick);
-            if (!selected) return;
+            if (!selected) {return;}
 
             if (selected.label.includes('安装')) {
                 await this.installAndSwitchVersion(selected.version);
@@ -54,7 +54,7 @@ export class BottomBar implements vscode.Disposable {
                 await this.switchVersion(selected.version);
             }
         } catch (error) {
-            vscode.window.showErrorMessage(`版本操作失败: ${error}`);
+            vscode.window.showErrorMessage(`版本操作失败: ${error}`, { timeout: 5000 } as any);
         }
     }
 
@@ -104,10 +104,10 @@ export class BottomBar implements vscode.Disposable {
     ) {
         quickPick.onDidTriggerItemButton(async (event) => {
             const item = event.item as CustomQuickPickItem;
-            if (!item.version) return;
-            this.manager.webview.postMessage('buttonLoading', item.version, 'delete')
+            if (!item.version) {return;};
+            this.manager.webview.postMessage('buttonLoading', item.version, 'delete');
             const confirm = await this.manager.executeCommand('nvm-uninstall', item.version);
-            if (!confirm.delete) return;
+            if (!confirm.delete) {return;};
         });
     }
 
@@ -164,7 +164,7 @@ export class BottomBar implements vscode.Disposable {
 
     private async installAndSwitchVersion(version: string) {
         await this.showProgress(`正在安装Node ${version}`, async () => {
-            this.manager.webview.postMessage('buttonLoading', version, version)
+            this.manager.webview.postMessage('buttonLoading', version, version);
             await this.manager.executeCommand('nvm-install', version);
             await this.manager.executeCommand('create-nvmrc', version);
         });
@@ -173,7 +173,7 @@ export class BottomBar implements vscode.Disposable {
 
     private async switchVersion(version: string) {
         await this.showProgress(`正在切换到Node ${version}`, async () => {
-            this.manager.webview.postMessage('buttonLoading', version, version)
+            this.manager.webview.postMessage('buttonLoading', version, version);
             await this.manager.executeCommand('nvm-use', version);
             await this.manager.executeCommand('create-nvmrc', version);
 

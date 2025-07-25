@@ -42,8 +42,8 @@ export class NVMNodeSwitch {
     /** 执行Webview命令并返回结果 */
     public async executeCommand(sectionId: string, params?: string) {
         this.log(`接收命令${sectionId} ,${params}`);
-        if (sectionId === 'initall') return this.canHandleWebAll ? this.initialCommand() : this.log('不让执行initall');
-        if (sectionId === 'all') return this.initialCommand();
+        if (sectionId === 'initall') {return this.canHandleWebAll ? this.initialCommand() : this.log('不让执行initall');}
+        if (sectionId === 'all') {return this.initialCommand();}
         try {
             let data;
             // 其他
@@ -66,7 +66,7 @@ export class NVMNodeSwitch {
                 this.bottomBar.updateNodeVersionStatus();
             } else if (sectionId === 'nvm-install') {
                 await commandHandlers.handleInstallAndUse(`nvm install ${params}`);
-                this.executeCommand('nvm-use', params)
+                this.executeCommand('nvm-use', params);
                 return;
             } else if (sectionId === 'nvm-use') {
                 data = await commandHandlers.handleInstallAndUse(`nvm use ${params}`);
