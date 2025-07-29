@@ -1,6 +1,6 @@
 // 获取VSCode API
 const vscode = acquireVsCodeApi();
-
+let t = {};
 // 获取数据的主要方法
 function getData(sectionId, params) {
     console.log('发送命令', { sectionId, params });
@@ -13,12 +13,16 @@ window.addEventListener('message', async (event) => {
     console.log('收到消息', event.data);
     const { sectionId, params, data, error } = event.data;
     if (sectionId === 'get-setting') {
-        if(params?.setting){
+        if (params?.setting) {
             createSettingsContainer(data, params);
-        }else{
+        } else {
             updateVersionSource(data);
         }
         return;
+    } else if (sectionId === 'get-languagePack') {
+        t = data;
+        // 应用语言包到界面
+        applyLanguagePack();
     }
     // 设置加载状态
     if (data === 'loading') {
@@ -69,3 +73,22 @@ window.addEventListener('message', async (event) => {
     }
 }
 );
+
+
+function applyLanguagePack() {
+    // 遍历语言包并应用到界面元素
+    for (const [key, value] of Object.entries(t)) {
+        const elements = document.querySelectorAll(`[data-locale="${key}"]`);
+        elements.forEach(el => {
+            el.textContent = value;
+        });
+    }
+}
+//设置单个元素的语言
+function setT(element, key) {
+    element.textContent = t[key] || key;
+    element.setAttribute('data-locale', key);
+}
+
+// 初始化时请求语言包
+getData('get-languagePack');

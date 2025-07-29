@@ -28,20 +28,20 @@ export async function handleNvmVersion() {
     return extractVersion(result.output);
 }
 //处理NVM未安装或未正确配置的情况
-export async function handleNvmNoV(platform: string) {
+export async function handleNvmNoV(platform: string, languagePack: any) {
     const selection = await vscode.window.showErrorMessage(
-        'NVM未安装或未正确配置，请检查NVM安装路径和环境变量设置。',
-        platform === 'win' ? '跳转安装NVM' : '安装',
-        '忽略'
+        languagePack['NVM未安装或未正确配置，请检查NVM安装路径和环境变量设置。'],
+        platform === 'win' ? languagePack['跳转安装NVM'] : languagePack['安装'],
+        languagePack['忽略']
     );
-    if (selection === '跳转安装NVM' || selection === '安装') {
+    if (selection === languagePack['跳转安装NVM'] || selection === languagePack['安装']) {
         if (platform === 'win') {
             vscode.env.openExternal(vscode.Uri.parse('https://github.com/coreybutler/nvm-windows/releases'));
         } else if (platform === 'linux' || platform === 'mac') {
-            const terminal = vscode.window.createTerminal('NVM安装');
+            const terminal = vscode.window.createTerminal(languagePack['NVM安装']);
             terminal.show();
             terminal.sendText('curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash');
-            vscode.window.showInformationMessage('安装完成后请重启终端或执行: source ~/.bashrc');
+            vscode.window.showInformationMessage(`${languagePack['安装完成后请重启终端或执行:']} source ~/.bashrc`);
         }
     }
 }
@@ -82,13 +82,13 @@ export async function handleAvList(source: string) {
     }
 }
 //安装和使用
-export async function handleInstallAndUse(operation: 'install' | 'use', version: string) {
+export async function handleInstallAndUse(operation: 'install' | 'use', version: string, languagePack: any) {
     let success = true;
     await vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
         title: operation === 'install'
-            ? `正在安装Node ${version}`
-            : `正在切换Node ${version}`,
+            ? `${languagePack['正在安装Node']} ${version}`
+            : `${languagePack['正在切换Node']} ${version}`,
         cancellable: false
     }, async () => {
         const result = await localExecuteCommand(`nvm ${operation} ${version}`);
@@ -98,22 +98,20 @@ export async function handleInstallAndUse(operation: 'install' | 'use', version:
     return success;
 }
 //处理确认删除
-export async function handleConfirmDelete(version: string, isCurrent: boolean) {
+export async function handleConfirmDelete(version: string, languagePack: any) {
     const result = await vscode.window.showWarningMessage(
-        isCurrent
-            ? `当前正在使用Node.js版本 ${version}，确定要删除吗?`
-            : `确定要删除Node.js版本 ${version} 吗?`,
+        `${languagePack['删除Node']}: ${version}?`,
         { modal: true },
-        '确定'
+        languagePack['确定']
     );
-    return result === '确定';
+    return result === languagePack['确定'];
 }
 //处理删除版本
-export async function handleDeleteVersion(version: string) {
+export async function handleDeleteVersion(version: string, languagePack: any) {
     let success = false;
     await vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
-        title: `正在删除Node ${version}`,
+        title: `${languagePack['正在删除Node']} ${version}`,
         cancellable: false
     }, async () => {
         const result = await localExecuteCommand(`nvm uninstall ${version}`);
@@ -128,9 +126,9 @@ export async function handleDeleteVersion(version: string) {
 
         //     return new Promise(resolve => setTimeout(resolve, 3000));
         // });
-        vscode.window.showInformationMessage(`Node ${version} 已成功删除。`);
+        vscode.window.showInformationMessage(`Node:${version} ${languagePack['已成功删除']}`);
     } else {
-        vscode.window.showErrorMessage(`Node ${version} 删除失败。`);
+        vscode.window.showErrorMessage(`Node:${version} ${languagePack['删除失败']}`);
     }
     return success;
 }

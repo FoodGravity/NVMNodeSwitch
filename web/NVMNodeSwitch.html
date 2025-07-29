@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="styles/node_version_main.css">
     <link rel="stylesheet" href="styles/svg_buttons.css">
     <meta charset="UTF-8">
-    <title>NVM 管理器</title>
 </head>
 
 <body>
@@ -41,14 +40,14 @@
         </div>
         <div id="nvm-list" class="section">
             <div class="title-bar">
-                <div class="segmentation">已安装的 Node 版本:</div>
+                <div class="segmentation" data-locale="已安装的Node版本:"></div>
             </div>
             <div class="content-container uni-btn-s" id="installed-versions-container"></div>
         </div>
 
         <div id="nvm-list-available" class="section">
             <div class="title-bar">
-                <div class="segmentation">可用的 Node 版本:</div>
+                <div class="segmentation" data-locale="可用的Node版本:"></div>
                 <select id="version-source" class="uni-btn source-selector"></select>
             </div>
             <div class="content-container table-container" id="available-versions-container"></div>

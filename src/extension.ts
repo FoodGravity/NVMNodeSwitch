@@ -3,6 +3,8 @@ import { setDefaultEncoding } from './handle/encodingUtils';
 import * as commandHandlers from './handle/commandHandlers';
 import { BottomBar } from './bottomBar';
 import { Webview } from './webview';
+import * as fs from 'fs';
+import * as path from 'path';
 // import { version } from 'os';
 
 export class NVMNodeSwitch {
@@ -29,13 +31,22 @@ export class NVMNodeSwitch {
     public activate() {
         setDefaultEncoding(this.log.bind(this));
         this.initialCommand();
+        this.languagePack = this.getLanguagePack();
+        // 添加配置变化监听
+        this.context.subscriptions.push(
+            vscode.workspace.onDidChangeConfiguration(e => {
+                if (e.affectsConfiguration('nvmNodeSwitch.language')) {
+                    this.executeCommand('get-languagePack');
+                }
+            })
+        );
     }
     // 公共变量
     public platform = 'win';
     public nvmV = '';
     public nodeV = '';
     public insList: string[] = [];
-
+    public languagePack: { [key: string]: string } = {};
     //初始打开时依次执行命令函数
     private async initialCommand() {
         await this.executeCommand('node-v');
@@ -79,7 +90,11 @@ export class NVMNodeSwitch {
                 await config.update(key, params[key], vscode.ConfigurationTarget.Global);
             }
             this.webview.postMessage('update-setting', '', true);
-            this.executeCommand('get-setting');
+            this.executeCommand('get-setting', { setting: true });
+            return;
+        } else if (sectionId === 'get-languagePack') {
+            this.languagePack = this.getLanguagePack();
+            this.webview.postMessage('get-languagePack', '', this.languagePack);
             return;
         }
 
@@ -100,7 +115,7 @@ export class NVMNodeSwitch {
         else if (sectionId === 'nvm-v') {
             this.nvmV = await commandHandlers.handleNvmVersion();
             this.webview.postMessage('nvm-v', '', this.nvmV);
-            if (!this.nvmV) { await commandHandlers.handleNvmNoV(this.platform); }
+            if (!this.nvmV) { await commandHandlers.handleNvmNoV(this.platform, this.languagePack); }
         }
 
         /**以下命令依赖nvm版本 */
@@ -158,14 +173,14 @@ export class NVMNodeSwitch {
 
         /**以下都是按钮*/
         else if (sectionId === 'nvm-use') {
-            const success = await commandHandlers.handleInstallAndUse('use', params);
+            const success = await commandHandlers.handleInstallAndUse('use', params, this.languagePack);
             this.webview.postMessage('nvm-use', params, success ? 'current' : 'error');
             if (success) {
                 this.executeCommand('create-nvmrc', 'check');
             }
         }
         else if (sectionId === 'nvm-install') {
-            const success = await commandHandlers.handleInstallAndUse('install', params);
+            const success = await commandHandlers.handleInstallAndUse('install', params, this.languagePack);
 
             if (!success) { this.webview.postMessage('nvm-install', params, 'error'); return; }
 
@@ -174,10 +189,10 @@ export class NVMNodeSwitch {
             // 安装成功后询问是否立即切换
             const useNow = await vscode.window.showInformationMessage(
                 `Node ${params} 安装成功，是否立即切换？`,
-                '是',
-                '否'
+                '确定',
+                '取消'
             );
-            if (useNow === '是') {
+            if (useNow === '确定') {
                 this.executeCommand('nvm-use', params);
             } else {
                 this.webview.postMessage('nvm-install', params, 'installed');
@@ -185,14 +200,29 @@ export class NVMNodeSwitch {
 
         }
         else if (sectionId === 'nvm-uninstall') {
-            const yes = await commandHandlers.handleConfirmDelete(params, this.nodeV === params);
+            const yes = await commandHandlers.handleConfirmDelete(params, this.languagePack);
             if (!yes) {
                 this.webview.postMessage('nvm-uninstall', params, 'cancelled');
                 return;
             }
-            const success = await commandHandlers.handleDeleteVersion(params);
+            const success = await commandHandlers.handleDeleteVersion(params, this.languagePack);
             this.webview.postMessage('nvm-uninstall', params, success ? 'success' : 'error');
             if (success) { await this.executeCommand('nvm-list', 'noClear'); }
+        }
+    }
+    private getLanguagePack(): any {
+        const config = vscode.workspace.getConfiguration('nvmNodeSwitch');
+        const language = config.get('language') || 'zh-CN';
+        const localePath = path.join(this.context.extensionPath, 'locales', `${language}.json`);
+
+        try {
+            const fileContent = fs.readFileSync(localePath, 'utf8');
+            return JSON.parse(fileContent);
+        } catch (error) {
+            // 如果指定语言文件不存在，回退到英文
+            const defaultPath = path.join(this.context.extensionPath, 'locales', 'zh-CN.json');
+            const defaultContent = fs.readFileSync(defaultPath, 'utf8');
+            return JSON.parse(defaultContent);
         }
     }
 }

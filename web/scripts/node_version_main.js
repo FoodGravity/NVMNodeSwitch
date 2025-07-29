@@ -87,7 +87,7 @@ function updateVersionSource(data) {
     // 添加默认选项
     const defaultOption = document.createElement('option');
     defaultOption.value = '';
-    defaultOption.textContent = '从nvm获取';
+    defaultOption.textContent = 'nvm';
     sourceSelect.appendChild(defaultOption);
 
     // 添加配置的版本源选项
@@ -96,7 +96,7 @@ function updateVersionSource(data) {
             if (source.name && source.url) {
                 const option = document.createElement('option');
                 option.value = source.url;
-                option.textContent = `从${source.name}获取`;
+                option.textContent = source.name;
                 sourceSelect.appendChild(option);
             }
         });
@@ -203,7 +203,7 @@ function setLoadingState(sectionId, isLoading = true, clean = true) {
     const refreshBtn = section.querySelector(`#refresh-${sectionId}`);
 
     if (isLoading) {
-        if (clean) { container.innerHTML = '正在获取...'; }
+        if (clean) { container.innerHTML = t.正在获取; }
         refreshBtn?.classList.add('loading');
     } else {
         refreshBtn?.classList.remove('loading');

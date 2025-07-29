@@ -34,7 +34,7 @@ function createSettingsContainer(data) {
     span.style.lineHeight = '16px';
     span.style.fontSize = '14px';
     span.style.verticalAlign = 'middle';
-    span.textContent = '返回';
+    setT(span, '返回');
 
     backButton.appendChild(span);
     container.appendChild(backButton);
@@ -42,7 +42,7 @@ function createSettingsContainer(data) {
     //标题
     const title = document.createElement('div');
     title.className = 'title';
-    title.textContent = '综合设置';
+    setT(title, '综合设置');
     title.style.textAlign = 'center';
     container.appendChild(title);
 
@@ -54,7 +54,7 @@ function createSettingsContainer(data) {
     titleBar.className = 'title-bar';
 
     const titleDiv = document.createElement('div');
-    titleDiv.textContent = '界面语言:';
+    setT(titleDiv, '界面语言:');
     titleBar.appendChild(titleDiv);
 
     const languageSelect = document.createElement('select');
@@ -87,7 +87,12 @@ function createSettingsContainer(data) {
     // 来源设置部分
     const sourceSection = document.createElement('div');
     sourceSection.className = 'section';
-    sourceSection.innerHTML = `<div class="title-bar"><div>可用列表的来源:</div></div>`;
+    const sourceTitleBar = document.createElement('div');
+    titleBar.className = 'title-bar';
+    const sourceTitleDiv = document.createElement('div');
+    setT(sourceTitleDiv, '可用列表的来源:');
+    sourceTitleBar.appendChild(sourceTitleDiv);
+    sourceSection.appendChild(sourceTitleBar);
 
     // 创建来源表格
     const sourcesTable = document.createElement('table');
@@ -124,19 +129,19 @@ function createSettingsContainer(data) {
     const resetButton = document.createElement('button');
     resetButton.id = 'reset-settings';
     resetButton.className = 'uni-btn table installed';
-    resetButton.textContent = '重置设置';
+    setT(resetButton, '重置设置');
     resetButton.addEventListener('click', function () {
         getData('get-setting', { reset: true });
     });
     buttonContainer.appendChild(resetButton);
-//取消按钮
+    //取消按钮
     const cancelButton = document.createElement('button');
     cancelButton.id = 'cancel-settings';
     cancelButton.className = 'uni-btn table disabled';
     cancelButton.disabled = true;
-    cancelButton.textContent = '取消';
+    setT(cancelButton, '取消');
     cancelButton.addEventListener('click', function () {
-       createSettingsContainer(data);
+        createSettingsContainer(data);
     });
     buttonContainer.appendChild(cancelButton);
 
@@ -145,7 +150,7 @@ function createSettingsContainer(data) {
     saveButton.id = 'save-settings';
     saveButton.className = 'uni-btn table disabled';
     saveButton.disabled = true;
-    saveButton.textContent = '保存设置';
+    setT(saveButton, '保存设置');
     saveButton.addEventListener('click', function () {
         getData('update-setting', newData);
     });
@@ -161,10 +166,10 @@ function createSettingsContainer(data) {
     function checkSettingsChanged() {
         // 比较语言设置
         const languageChanged = newData.language !== data.language;
-        
+
         // 比较来源设置
         const sourcesChanged = JSON.stringify(newData.sources) !== JSON.stringify(data.sources);
-        
+
         const isChanged = languageChanged || sourcesChanged;
         // 取消按钮
         cancelButton.className = isChanged ? 'uni-btn table installed' : 'uni-btn table disabled';
@@ -187,11 +192,11 @@ function createSettingsContainer(data) {
             ${createSvgButton('delete', '').outerHTML}
         </td>
     `;
-        
+
         // 获取输入元素
         const nameInput = row.querySelector('td:first-child input');
         const urlInput = row.querySelector('td:nth-child(2) input');
-        
+
         // 监听输入变化
         const updateData = () => {
             newData.sources = [];
@@ -205,14 +210,14 @@ function createSettingsContainer(data) {
             });
             checkSettingsChanged();
         };
-        
+
         nameInput.addEventListener('input', updateData);
         urlInput.addEventListener('input', updateData);
 
         // 绑定删除按钮事件
         row.querySelector('.button-icon.delete').addEventListener('click', function () {
             row.remove();
-            updateData(); // 删除行后也需要更新数据
+            updateData();
         });
         return row;
     }
