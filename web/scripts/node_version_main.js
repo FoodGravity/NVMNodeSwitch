@@ -1,0 +1,267 @@
+// 公共变量
+function renderNodeV(nodeV) {
+    const section = document.getElementById('node-v');
+    if (section) {
+        const container = section.querySelector('.content-container');
+        container.innerHTML = nodeV || '未安装';
+        container.className = `content-container segmentation ${nodeV ? 'success' : 'warning'}-color`;
+        setLoadingState('node-v', false);
+    }
+}
+function renderRecommendVersion(v) {
+    const container = document.getElementById('node-recommend')?.querySelector('.content-container');
+    if (container) {
+        container.innerHTML = v || '俺不推荐';
+        container.className = `content-container segmentation ${v ? 'success' : 'warning'}-color`;
+        setLoadingState('node-recommend', false);
+    }
+}
+// 渲染 NVM 状态
+function renderNvmV(nvmV) {
+    const sectionId = 'nvm-v';
+    const sElement = document.getElementById(sectionId);
+    if (sElement) {
+        if (nvmV) {
+            setAllSectionsToNone(false);
+            sElement.querySelector('.content-container').innerHTML = `${nvmV}`;
+        } else {
+            setAllSectionsToNone();
+            sElement.querySelector('.content-container').innerHTML = '<a href="https://github.com/coreybutler/nvm-windows/releases" target="_blank">下载nvm-windows</a>';
+        }
+        setLoadingState(sectionId, false);
+    }
+}
+
+// 设置nvmrc检查结果
+function renderNvmrcCheck(state, version) {
+    const sectionId = 'nvmrc-check';
+    // setLoadingState(sectionId);
+    const tooltip = document.getElementById(sectionId).querySelector(`.content-container`);
+
+    if (state === 'success') {
+        tooltip.innerHTML = version;
+        tooltip.className = `content-container segmentation success-color`;
+    }
+    else if (state === 'use') {
+        tooltip.innerHTML = `正在切换: ${version}`;
+        tooltip.className = `content-container segmentation warning-color`;
+    } else if (state === 'install') {
+        tooltip.innerHTML = `切换失败：${version}未安装`;
+        tooltip.className = `content-container segmentation error-color`;
+    } else if (state === 'use-fail') {
+        tooltip.innerHTML = `切换失败：${version}`;
+        tooltip.className = `content-container segmentation error-color`;
+    }
+
+    setLoadingState(sectionId, false);
+}
+
+
+// 2. 渲染已安装版本列表
+function renderNvmList(result) {
+    const sectionId = 'nvm-list';
+    //创建按钮
+    const containerElement = document.getElementById('installed-versions-container');
+    if (containerElement) {
+        containerElement.innerHTML = '';
+        if (result.versions?.length) {
+            result.versions.forEach(version => {
+                containerElement.appendChild(
+                    createVersionButton(version, false, result.currentVersion, result.versions)
+                );
+            });
+        } else {
+            containerElement.innerHTML = '没有已安装的 Node 版本';
+        }
+    }
+    setLoadingState(sectionId, false);
+}
+//更新version-source
+function updateVersionSource(data) {
+    const sourceSelect = document.getElementById('version-source');
+    if (!sourceSelect) { return; }
+
+    // 清空现有选项
+    sourceSelect.innerHTML = '';
+
+    // 添加默认选项
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = '从nvm获取';
+    sourceSelect.appendChild(defaultOption);
+
+    // 添加配置的版本源选项
+    if (data.sources && Array.isArray(data.sources)) {
+        data.sources.forEach(source => {
+            if (source.name && source.url) {
+                const option = document.createElement('option');
+                option.value = source.url;
+                option.textContent = `从${source.name}获取`;
+                sourceSelect.appendChild(option);
+            }
+        });
+    }
+
+    // 设置当前选中的选项
+    if (data.versionSource) {
+        for (let i = 0; i < sourceSelect.options.length; i++) {
+            if (sourceSelect.options[i].value === data.versionSource) {
+                sourceSelect.selectedIndex = i;
+                break;
+            }
+        }
+    }
+}
+// 3. 渲染可用版本列表
+function renderNvmAvailable(data) {
+    const sectionId = 'nvm-list-available';
+    // setLoadingState(sectionId, true, clean);
+    const elementsContainer = document.querySelector('.table-container');
+    if (elementsContainer) {
+        elementsContainer.innerHTML = '';
+        if (data.avList && Object.keys(data.avList).length) {
+            // 动态创建表格元素
+            const table = document.createElement('table');
+            table.id = 'available-versions-table';
+            const thead = document.createElement('thead');
+            const tbody = document.createElement('tbody');
+
+            const categories = Object.keys(data.avList);
+
+            // 创建表头
+            const headerRow = document.createElement('tr');
+            categories.forEach(category => {
+                const th = document.createElement('th');
+                th.textContent = category;
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+
+            // 创建表格内容
+            const maxRows = Math.max(...categories.map(cat => data.avList[cat].length));
+            Array.from({ length: maxRows }).forEach((_, i) => {
+                const row = document.createElement('tr');
+                categories.forEach(category => {
+                    const td = document.createElement('td');
+                    const version = data.avList[category][i];
+                    version && td.appendChild(createVersionButton(version, true, data.nodeV, data.insList));
+                    row.appendChild(td);
+                });
+                tbody.appendChild(row);
+            });
+
+            table.appendChild(thead);
+            table.appendChild(tbody);
+            elementsContainer.appendChild(table);
+        } else {
+            elementsContainer.innerHTML = '没有可用的node版本';
+        }
+    }
+    setLoadingState(sectionId, false);
+}
+
+
+//以下为辅助函数
+
+//版本源切换处理
+document.getElementById('version-source').addEventListener('change', function () {
+    getData('nvm-list-available', document.getElementById('version-source').value);
+});
+
+// 2\3. 处理版本按钮创建
+function createVersionButton(version, inTable, nodeV, insList) {
+    // 修改状态判断逻辑
+    let state;
+    if (version === nodeV) {
+        console.log('当前版本:', version, nodeV);
+        state = 'current';
+    } else if (insList.includes(version)) {
+        console.log('已安装版本:', version, nodeV);
+        state = 'installed';
+    } else {
+        state = 'table';
+    }
+    return createButtonComponent(version, state, inTable);
+}
+
+//设置所有版块的display属性为none
+function setAllSectionsToNone(isNone = true) {
+    document.querySelectorAll('.section').forEach(section => {
+        if (section.id !== 'nvm-v' && section.id !== 'node-v' && section.id !== 'node-recommend') {
+            section.style.display = isNone ? 'none' : 'flex';
+        } else {
+            section.style.display = 'flex';
+        }
+    });
+}
+
+//设置section的loading状态
+function setLoadingState(sectionId, isLoading = true, clean = true) {
+    const section = document.getElementById(sectionId);
+    if (!section) { return; }
+    const container = section.querySelector('.content-container');
+    const refreshBtn = section.querySelector(`#refresh-${sectionId}`);
+
+    if (isLoading) {
+        if (clean) { container.innerHTML = '正在获取...'; }
+        refreshBtn?.classList.add('loading');
+    } else {
+        refreshBtn?.classList.remove('loading');
+    }
+}
+// 创建所有刷新图标
+function createAllRefreshButtons() {
+    document.querySelectorAll('.section').forEach(section => {
+        const titleBar = section.querySelector('.title-bar');
+        if (!titleBar) {
+            return;
+        }
+        const refreshBtn = createSvgButton('refresh', `refresh-${section.id}`);
+        refreshBtn.classList.add('refresh');
+        refreshBtn.addEventListener('click', () => {
+            if (section.id === 'nvm-v') {
+                getData('all');
+            }
+            if (section.id === 'nvm-list-available') {
+                getData(section.id, document.getElementById('version-source').value);
+            } else {
+                getData(section.id);
+            }
+        });
+        titleBar.appendChild(refreshBtn);
+    });
+}
+//给nvm-v创建设置图标
+function createNvmVSettingButton() {
+    const nvmVSection = document.getElementById('nvm-v');
+    if (!nvmVSection) {
+        return;
+    }
+    const titleBar = nvmVSection.querySelector('.title-bar');
+    if (!titleBar) {
+        return;
+    }
+    const settingBtn = createSvgButton('setting', 'nvm-v-setting');
+    settingBtn.classList.add('refresh');
+    settingBtn.addEventListener('click', () => {
+        getData('get-setting', { setting: true });
+    });
+    titleBar.appendChild(settingBtn);
+}
+
+
+// 页面加载完成后绑定事件并初始化页面渲染
+function initializePage() {
+    console.log('页面初始化开始');
+    createNvmVSettingButton();
+    createAllRefreshButtons();
+    setAllSectionsToNone();
+    getData('get-setting', { setting: false });
+    getData('all');
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializePage);
+} else {
+    initializePage();
+}

@@ -11,44 +11,45 @@
 </head>
 
 <body>
-    <div class="container">
+    <div class="container" id="main-container">
         <div class="section" id="nvm-v">
             <div class="title-bar">
-                <div>NVM版本:</div>
+                <div>NVM:</div>
                 <div class="content-container segmentation">正在获取...</div>
             </div>
         </div>
 
-        <div id="nvmrc-check" class="section">
-            <div class="title-bar">
-                <div>.nvmrc:</div>
-                <div class="content-container segmentation">正在获取...</div>
+        <div class="horizontal">
+            <div class="section" id="node-v">
+                <div class="title-bar">
+                    <div>Node:</div>
+                    <div class="content-container segmentation">正在获取...</div>
+                </div>
             </div>
-
-        </div>
-
-        <div id="node-recommend" class="section">
-            <div class="title-bar">
-                <div>俺推荐:</div>
-                <div class="content-container segmentation">正在获取...</div>
+            <!-- <div id="node-recommend" class="section">
+                <div class="title-bar">
+                    <div>推荐:</div>
+                    <div class="content-container segmentation">正在获取...</div>
+                </div>
+            </div> -->
+            <div id="nvmrc-check" class="section">
+                <div class="title-bar">
+                    <div>.nvmrc:</div>
+                    <div class="content-container segmentation">正在获取...</div>
+                </div>
             </div>
         </div>
-
         <div id="nvm-list" class="section">
             <div class="title-bar">
                 <div class="segmentation">已安装的 Node 版本:</div>
             </div>
-            <div class="content-container node-version-buttons" id="installed-versions-container"></div>
+            <div class="content-container uni-btn-s" id="installed-versions-container"></div>
         </div>
 
         <div id="nvm-list-available" class="section">
             <div class="title-bar">
                 <div class="segmentation">可用的 Node 版本:</div>
-                <select id="version-source" class="node-version-button source-selector">
-                    <option>从nvm获取</option>
-                    <option value="https://nodejs.org/dist/index.json">从nodejs获取</option>
-                    <option value="https://cdn.npmmirror.com/binaries/node/index.json">从npmmirror获取</option>
-                </select>
+                <select id="version-source" class="uni-btn source-selector"></select>
             </div>
             <div class="content-container table-container" id="available-versions-container"></div>
         </div>
@@ -57,6 +58,7 @@
     <script src="scripts/svg_buttons.js"></script>
     <script src="scripts/node_version_button.js"></script>
     <script src="scripts/node_version_main.js"></script>
+    <script src="scripts/settings.js"></script>
 
 </body>
 

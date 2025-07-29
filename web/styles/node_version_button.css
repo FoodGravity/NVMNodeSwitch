@@ -1,33 +1,33 @@
 /* 基础按钮样式 */
-.node-version-button {
+.uni-btn {
     min-height: 28px;
+    min-width: 80px;
     padding: 0 1px 0 8px;
     position: relative;
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s;
+
     display: flex;
     align-items: center;
     justify-content: center;
+
     gap: 4px;
     background-color: var(--vscode-button-secondaryBackground);
     color: var(--vscode-button-secondaryForeground);
-    border: 1px solid var(--vscode-button-border);
+    border: 1px solid var(--vscode-button-border, var(--vscode-contrastBorder, rgba(0,0,0,0.1))); /* 添加回退值 */
     overflow: hidden;
 }
 
-.node-version-button .progress-bar {
-    position: absolute;
-    bottom: 0;
-    /* left: 0; */
-    right: 0;
-    height: 2px;
-    background-color: var(--vscode-errorForeground);
-    width: 100%;
-    transform-origin: left center;
+.button-text {
+    flex-grow: 1;
+    text-align: center;
+    font-size: 14px;
+    line-height: 20px;
+    color: currentColor;
 }
 
-.node-version-button.table {
+.uni-btn.table {
     background-color: var(--vscode-editor-background);
     color: var(--vscode-descriptionForeground);
     width: 100%;
@@ -35,77 +35,77 @@
 }
 
 /* 按钮状态变体 */
-.node-version-button.installed {
+.uni-btn.installed {
     background-color: var(--vscode-button-secondaryBackground);
     color: var(--vscode-button-secondaryForeground);
 }
 
-.node-version-button.current {
+.uni-btn.current {
     background-color: var(--vscode-button-background);
     color: var(--vscode-button-foreground);
     font-weight: bold;
 }
 
-.node-version-button.downloading {
+.uni-btn.downloading {
     background-color: var(--vscode-editorInfo-background);
     color: var(--vscode-editorInfo-foreground);
     border-color: color-mix(in srgb, var(--vscode-editorInfo-foreground) 30%, transparent);
 }
 
-.node-version-button.confirm,
-.node-version-button.error {
+.uni-btn.confirm,
+.uni-btn.error {
     background-color: var(--vscode-editorError-background);
     color: var(--vscode-editorError-foreground);
     border-color: color-mix(in srgb, var(--vscode-editorError-foreground) 30%, transparent);
 }
 
-.node-version-button.success {
+.uni-btn.success {
     color: var(--vscode-testing-iconPassed);
     border-color: color-mix(in srgb, var(--vscode-testing-iconPassed) 30%, transparent);
 }
 
-.node-version-button.warning {
+.uni-btn.warning {
     color: var(--vscode-testing-iconQueued);
     border-color: color-mix(in srgb, var(--vscode-testing-iconQueued) 30%, transparent);
 }
 
-.node-version-button.warning:hover {
+.uni-btn.warning:hover {
     color: var(--vscode-testing-iconQueued);
     border-color: var(--vscode-testing-iconQueued);
 }
 
 /* 统一悬停效果 */
-.node-version-button:hover {
+.uni-btn:hover {
     background-color: var(--vscode-list-hoverBackground);
     color: var(--vscode-list-hoverForeground);
     border-color: var(--vscode-list-hoverBackground);
     border: 1px solid var(--vscode-button-hoverBackground);
 }
-.node-version-button.current:hover {
+
+.uni-btn.current:hover {
     background-color: color-mix(in srgb, var(--vscode-button-background) 50%, transparent);
 }
 
-.node-version-button.downloading:hover {
+.uni-btn.downloading:hover {
     background-color: var(--vscode-editorInfo-background);
     color: var(--vscode-editorInfo-foreground);
     border-color: var(--vscode-editorInfo-foreground);
 }
 
-.node-version-button.confirm:hover,
-.node-version-button.error:hover {
+.uni-btn.confirm:hover,
+.uni-btn.error:hover {
     background-color: var(--vscode-editorError-background);
     color: var(--vscode-editorError-foreground);
     border-color: var(--vscode-editorError-foreground);
 }
 
 
-.node-version-button.success:hover {
+.uni-btn.success:hover {
     color: var(--vscode-testing-iconPassed);
     border-color: var(--vscode-testing-iconPassed);
 }
 
-.source-selector,
-.nvmrc {
+.source-selector {
     margin-left: auto;
     padding: 0 1px 0 8px;
 }
@@ -125,4 +125,15 @@
 .source-selector option:checked {
     background-color: var(--vscode-list-activeSelectionBackground);
     color: var(--vscode-list-activeSelectionForeground);
+}
+
+
+.uni-btn:disabled {
+    cursor: not-allowed;
+}
+
+.uni-btn:disabled:hover {
+    background-color: var(--vscode-editor-background);
+    color: var(--vscode-descriptionForeground);
+    border: 1px solid var(--vscode-editor-background);
 }

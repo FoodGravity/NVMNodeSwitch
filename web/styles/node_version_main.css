@@ -7,31 +7,55 @@
     margin: 0 auto;
     box-sizing: border-box;
     overflow: hidden;
+    gap: 8px;
+}
+
+.horizontal {
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+    align-items: center;
+    justify-content: space-between;
+    min-width: 300px;
+    overflow: hidden;
+}
+
+.horizontal>.section {
+    flex: 1;
+    min-width: 0;
 }
 
 /* 每个版块样式 */
 .section {
-    margin-bottom: 16px;
-    padding: 8px;
+    padding: 4px;
     background-color: var(--vscode-editorSuggestWidget-background);
     border-radius: 4px;
-    gap: 8px;
+    gap: 4px;
     display: flex;
     flex-direction: column;
+    white-space: nowrap;
+    overflow: hidden;
+    min-height: 0;
+}
+
+#nvm-list-available {
+    flex: 1;
 }
 
 .title-bar {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 4px;
+    padding: 0 0 0 4px;
 }
 
 .segmentation {
     flex: 1;
+    margin-right: auto;
 }
 
 /* Node 版本按钮容器样式 */
-.node-version-buttons {
+.uni-btn-s {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
@@ -40,13 +64,7 @@
     overflow: auto;
 }
 
-#nvm-list-available {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    overflow: hidden;
-}
+
 
 /* 优化表格容器样式 */
 .table-container {
@@ -85,7 +103,7 @@ td {
 }
 
 th {
-    background-color: var(--vscode-button-secondaryBackground);
+    background-color: var(--vscode-editor-background);
     font-weight: bold;
 }
 

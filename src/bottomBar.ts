@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import { localExecuteCommand } from './handle/processUtils';
 import type { NVMNodeSwitch } from './extension';
+import { extractVersion } from './handle/commandHandlers';
 // 定义自定义 QuickPickItem 类型
 interface CustomQuickPickItem extends vscode.QuickPickItem {
     version: string;
@@ -9,7 +9,7 @@ interface CustomQuickPickItem extends vscode.QuickPickItem {
 export class BottomBar implements vscode.Disposable {
     private statusBarItem: vscode.StatusBarItem;
     private manager: NVMNodeSwitch;
-    private commandDisposable: vscode.Disposable;
+    private commandDisposable: vscode.Disposable;// 命令注册
     constructor(manager: NVMNodeSwitch) {
         this.manager = manager;
         // 创建状态栏项
@@ -21,41 +21,21 @@ export class BottomBar implements vscode.Disposable {
     }
 
     /** 更新状态栏显示当前Node版本 */
-    public async updateNodeVersionStatus() {
-        try {
-            const version = (await localExecuteCommand('node -v')).trim();
-            this.statusBarItem.text = `Node: ${version || 'unknown'}`;
-        } catch {
-            this.statusBarItem.text = `Node: unknown`;
-        }
+    public async updateNodeVStatus(version: string) {
+        this.statusBarItem.text = `Node: ${version || 'unknown'}`;
         this.statusBarItem.show();
     }
 
     /** 显示版本管理快速操作面板 */
     public async showVersionQuickPick() {
-        try {
-            this.manager.outputChannel.appendLine('开始获取已安装的Node版本...');
-            const { versions, currentVersion } = await this.manager.executeCommand('nvm-list');;
-            this.manager.outputChannel.appendLine(`获取到${versions.length}个已安装版本，当前版本: ${currentVersion}`);
+        const items = this.createVersionItems(this.manager.insList, this.manager.nodeV);
+        const quickPick = this.createQuickPick(items);
 
-            const deleteButton = this.createDeleteButton();
-            const items = this.createVersionItems(versions, currentVersion, deleteButton);
-            const quickPick = this.createQuickPick(items);
+        const [selectedAction, selectedVersion] = await this.waitForAction(quickPick, items);
+        if (!selectedAction || !selectedVersion) { return; }
+        this.manager.webview.postMessage('buttonLoading', selectedVersion, selectedAction);
+        this.manager.executeCommand(selectedAction, selectedVersion);
 
-            this.setupButtonClickHandler(quickPick, items, versions, currentVersion, deleteButton);
-            this.setupInputChangeHandler(quickPick, items);
-
-            const selected = await this.waitForSelection(quickPick);
-            if (!selected) {return;}
-
-            if (selected.label.includes('安装')) {
-                await this.installAndSwitchVersion(selected.version);
-            } else {
-                await this.switchVersion(selected.version);
-            }
-        } catch (error) {
-            vscode.window.showErrorMessage(`版本操作失败: ${error}`, { timeout: 5000 } as any);
-        }
     }
 
     private createDeleteButton(): vscode.QuickInputButton {
@@ -68,24 +48,13 @@ export class BottomBar implements vscode.Disposable {
     private createVersionItems(
         versions: string[],
         currentVersion: string,
-        deleteButton: vscode.QuickInputButton
     ): CustomQuickPickItem[] {
-        const versionItems = versions.map(version => ({
+        return versions.map(version => ({
             label: version === currentVersion ? `$(check) ${version}` : `$(debug-stackframe-dot) ${version}`,
             description: version === currentVersion ? '当前使用版本' : '点击切换到此版本',
             version,
-            buttons: [deleteButton]
+            buttons: [this.createDeleteButton()]
         }));
-
-        return [
-            {
-                label: '$(add) 或者安装新版本',
-                description: '输入版本号下载安装',
-                version: '',
-                buttons: [deleteButton]
-            },
-            ...versionItems
-        ];
     }
 
     private createQuickPick(items: CustomQuickPickItem[]): vscode.QuickPick<CustomQuickPickItem> {
@@ -97,17 +66,13 @@ export class BottomBar implements vscode.Disposable {
 
     private setupButtonClickHandler(
         quickPick: vscode.QuickPick<CustomQuickPickItem>,
-        items: CustomQuickPickItem[],
-        versions: string[],
-        currentVersion: string,
-        deleteButton: vscode.QuickInputButton
+        resolve: (value: [string | undefined, string | undefined]) => void
     ) {
         quickPick.onDidTriggerItemButton(async (event) => {
             const item = event.item as CustomQuickPickItem;
-            if (!item.version) {return;};
-            this.manager.webview.postMessage('buttonLoading', item.version, 'delete');
-            const confirm = await this.manager.executeCommand('nvm-uninstall', item.version);
-            if (!confirm.delete) {return;};
+            if (!item.version) { return; }
+            resolve(['nvm-uninstall', item.version]);
+            quickPick.hide();
         });
     }
 
@@ -116,8 +81,7 @@ export class BottomBar implements vscode.Disposable {
         items: CustomQuickPickItem[]
     ) {
         quickPick.onDidChangeValue(value => {
-            const normalizedVersion = value.trim().match(/\d+(?:\.\d+)*/)?.[0] || '';
-
+            const normalizedVersion = extractVersion(value);
             if (!normalizedVersion) {
                 quickPick.items = items;
                 return;
@@ -139,46 +103,24 @@ export class BottomBar implements vscode.Disposable {
         });
     }
 
-    private waitForSelection(quickPick: vscode.QuickPick<CustomQuickPickItem>): Promise<CustomQuickPickItem | undefined> {
+    private waitForAction(quickPick: vscode.QuickPick<CustomQuickPickItem>, items: CustomQuickPickItem[]): Promise<[string | undefined, string | undefined]> {
         return new Promise(resolve => {
+            this.setupButtonClickHandler(quickPick, resolve);
+            this.setupInputChangeHandler(quickPick, items);
+
             quickPick.onDidAccept(() => {
                 const activeItem = quickPick.activeItems[0] as CustomQuickPickItem;
-                resolve(activeItem);
+                if (!activeItem) {
+                    resolve([undefined, undefined]);
+                    quickPick.hide();
+                    return;
+                }
+                const action = activeItem.label.includes('安装') ? 'nvm-install' : 'nvm-use';
+                resolve([action, activeItem.version]);
                 quickPick.hide();
             });
             quickPick.show();
         });
-    }
-
-    private async showProgress(title: string, action: () => Promise<void>) {
-        await vscode.window.withProgress({
-            location: vscode.ProgressLocation.Notification,
-            title,
-            cancellable: false
-        }, async (progress) => {
-            progress.report({ increment: 0 });
-            await action();
-            progress.report({ increment: 100 });
-        });
-    }
-
-    private async installAndSwitchVersion(version: string) {
-        await this.showProgress(`正在安装Node ${version}`, async () => {
-            this.manager.webview.postMessage('buttonLoading', version, version);
-            await this.manager.executeCommand('nvm-install', version);
-            await this.manager.executeCommand('create-nvmrc', version);
-        });
-        await new Promise(resolve => setTimeout(resolve, 5000));
-    }
-
-    private async switchVersion(version: string) {
-        await this.showProgress(`正在切换到Node ${version}`, async () => {
-            this.manager.webview.postMessage('buttonLoading', version, version);
-            await this.manager.executeCommand('nvm-use', version);
-            await this.manager.executeCommand('create-nvmrc', version);
-
-        });
-        await new Promise(resolve => setTimeout(resolve, 5000));
     }
 
     public dispose() {

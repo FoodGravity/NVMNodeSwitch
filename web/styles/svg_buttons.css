@@ -2,9 +2,9 @@
 .button-icon {
     cursor: pointer;
 
-    width: 24px;
-    height: 24px;
-    padding: 0;
+    /* width: 24px;
+    height: 24px; */
+    padding: 4px;
 
     background-color: transparent;
     color: currentColor;
@@ -19,8 +19,9 @@
     border-radius: 4px;
 
     animation: none;
-
+    flex-shrink: 0;
 }
+
 
 .button-icon.refresh {
     background-color: var(--vscode-button-secondaryBackground);
@@ -30,15 +31,15 @@
     background-color: var(--vscode-button-secondaryHoverBackground);
 }
 
-.button-icon.confirm:hover,
 .button-icon.delete:hover {
     background-color: color-mix(in srgb, var(--vscode-errorForeground) 70%, transparent);
 }
 
 .button-icon svg {
-    padding: 4px;
     transition: transform 0.2s;
     stroke: "currentColor";
+    width: 16px;
+    height: 16px;
 }
 
 .button-icon.loading svg {

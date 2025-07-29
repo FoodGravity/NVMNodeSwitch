@@ -1,5 +1,5 @@
 // 2. 解析已安装版本
-export function parseInstalledVersions(result: string) {
+export function parseInsList(result: string) {
     const versions: string[] = [];
     let currentVersion = '';
     const versionRegex = /(\d+\.\d+\.\d+)/;
@@ -17,7 +17,7 @@ export function parseInstalledVersions(result: string) {
     return { versions, currentVersion };
 }
 // 3. 解析可用版本
-export function parseAvailableVersions(result: any) {
+export function parseAvList(result: any) {
     //如果result为对象
     if (typeof result === 'object') {
         return {

@@ -1,7 +1,7 @@
 const icons = {
     refresh: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-  <path d="M20.1,15.93c-.04.09-.09.18-.13.26-1.51,2.86-4.51,4.8-7.96,4.8-4.97,0-9-4.03-9-9S7.03,3,12,3c3.53,0,6.59,2.04,8.06,5"/>
-  <polyline points="20 2 20 8 14 8"/>
+    <path d="M20.1,15.93c-.04.09-.09.18-.13.26-1.51,2.86-4.51,4.8-7.96,4.8-4.97,0-9-4.03-9-9S7.03,3,12,3c3.53,0,6.59,2.04,8.06,5"/>
+    <polyline points="20 2 20 8 14 8"/>
     </svg>`,
     delete: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
     <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -33,7 +33,21 @@ const icons = {
     <path d="M9,5c0-1.1.9-2,2-2h2c1.1,0,2,.9,2,2v2h-6v-2Z"/>
     <path d="M12,9v6"/>
     <path d="M12,17v2"/>
-</svg>`,
+    </svg>`,
+    forbidden: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <circle cx="12" cy="12" r="9"/>
+    <line x1="18" y1="6" x2="6" y2="18"/>
+    </svg>`,
+    setting: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>`,
+    back: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M16,20l-8-8,8-8" />
+    </svg>`,
+    add: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M12,4v16M4,12h16" />
+    </svg>`,
 };
 //创建svg按钮 
 function createSvgButton(iconName, iconId) {

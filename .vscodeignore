@@ -2,8 +2,8 @@
 .vscode-test/**
 out/**
 node_modules/**
-dist/**
 src/**
+其他/**
 .gitignore
 .yarnrc
 esbuild.js

@@ -24,9 +24,20 @@ export async function localExecuteCommand(command: string) {
         child.on('close', resolve);
     });
 
-    if (exitCode !== 0) {
-        throw new Error(`命令执行失败 (${exitCode}): ${errorOutput || output}`);
-    }
+    // 可配置的错误关键词数组（可按需添加）
+    const errorKeywords = [
+        'error', 'fail', 'warning',
+        'not found', '无法', '失败',
+        '警告', 'missing', 'not installed'
+    ];
+    const errorPattern = new RegExp(`(${errorKeywords.join('|')})`, 'i');
 
-    return output;
+    if ((exitCode !== 0 && !errorOutput) || errorPattern.test(output)) {
+        errorOutput = output;
+        output = '';
+    }
+    return {
+        output,
+        errorOutput,
+    };
 }

@@ -2,14 +2,14 @@
   "name": "nvm-node-switch",
   "displayName": "NVM Node Switch",
   "description": "基于.nvmrc的Node版本自动切换工具，提供以下功能：\n- 自动检测并切换工作区.nvmrc指定版本\n- 智能推荐package.json适配的Node版本\n- 可视化管理已安装/可用Node版本（安装/切换/删除）\n- 支持nvm、nodejs官方和npmmirror多版本源\n- 提供跨平台的版本管理Webview界面",
-  "version": "0.1.19",
+  "version": "0.0.14",
   "publisher": "李学明",
   "repository": {
     "type": "git",
     "url": "https://github.com/FoodGravity/NVMNodeSwitch.git"
   },
   "engines": {
-    "vscode": "^1.97.2"
+    "vscode": "^1.97.0"
   },
   "categories": [
     "Other"
@@ -19,12 +19,41 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "NVM Node Switch",
+      "properties": {
+        "nvmNodeSwitch.language": {
+          "type": "string",
+          "enum": [
+            "zh-CN",
+            "en"
+          ],
+          "default": "zh-CN",
+          "description": "插件界面语言"
+        },
+        "nvmNodeSwitch.sources": {
+          "type": "array",
+          "default": [
+            {"name": "nodejs", "url": "https://nodejs.org/dist/index.json"},
+            {"name": "npmmirror", "url": "https://cdn.npmmirror.com/binaries/node/index.json"}
+          ],
+          "description": "Node版本列表来源",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {"type": "string"},
+              "url": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
     "viewsContainers": {
       "activitybar": [
         {
           "id": "nodeVersionManager",
           "title": "Node Version Manager",
-          "icon": "assets/icons/icon.svg"
+          "icon": "icon.svg"
         }
       ]
     },
@@ -67,7 +96,7 @@
     "@types/iconv-lite": "^0.0.1",
     "@types/mocha": "^10.0.10",
     "@types/node": "^24.1.0",
-    "@types/vscode": "^1.102.0",
+    "@types/vscode": "^1.97.0",
     "@typescript-eslint/eslint-plugin": "^8.38.0",
     "@typescript-eslint/parser": "^8.38.0",
     "esbuild": "^0.25.8",
