@@ -62,16 +62,16 @@ export function handleUpdateNvmrc(version: string) {
     return extractVersion(fileContent);
 }
 //处理是否是一个项目目录
-export async function IsProjectCreateNvmrc() {
+export async function IsProjectCreateNvmrc(languagePack: any) {
     const workspaceRoot = vscode.workspace.rootPath || '';
     // 检查是否是项目目录
     const isProjectDir = fs.existsSync(path.join(workspaceRoot, 'package.json')) ||
         fs.existsSync(path.join(workspaceRoot, '.git')) ||
         fs.existsSync(path.join(workspaceRoot, '.project'));
-    if (!isProjectDir) { return 'not'; }
-    //提醒是一个项目
-    const state = vscode.window.showInformationMessage('似乎是一个项目，是否创建.nvmrc？', '创建', '取消');
-    return state;
+    const state = await vscode.window.showInformationMessage(
+        isProjectDir ? languagePack['这好像是个项目，要创建.nvmrc吗？'] : languagePack['这好像不是项目，不用创建.nvmrc吧？'],
+        languagePack['创建'], languagePack['不创建']);
+    return state === languagePack['创建'];
 }
 
 //处理引擎推荐版本
@@ -90,7 +90,7 @@ export async function handleInsList() {
 
 }
 //处理可用版本列表
-export async function handleAvList(source: string ) {
+export async function handleAvList(source: string) {
     if (source?.startsWith('http')) {
         const response = await fetch(source);
         return parseAvList(await response.json());

@@ -156,11 +156,11 @@ export class NVMNodeSwitch {
                 // 未安装该版本，提示安装
                 this.webview.postMessage('nvmrc-check', 'install', version);
                 const installNow = await vscode.window.showInformationMessage(
-                    `Node ${version} 未安装，是否立即安装？`,
-                    '安装',
-                    '取消'
+                    `Node ${version} ${this.languagePack['未安装，是否立即安装？']}`,
+                    this.languagePack['安装'],
+                    this.languagePack['取消']
                 );
-                if (installNow === '安装') {
+                if (installNow === this.languagePack['安装']) {
                     this.executeCommand('nvm-install', version);
                 }
             }
@@ -172,7 +172,8 @@ export class NVMNodeSwitch {
                 return;
             }
             const { found } = commandHandlers.handleCheckNvmrc();
-            if (found || (await commandHandlers.IsProjectCreateNvmrc()) === '创建') {
+            if (found || (await commandHandlers.IsProjectCreateNvmrc(this.languagePack))) {
+
                 commandHandlers.handleUpdateNvmrc(this.nodeV);
                 this.webview.postMessage('nvmrc-check', 'success', this.nodeV);
             }
@@ -193,11 +194,11 @@ export class NVMNodeSwitch {
             this.webview.postMessage('nvm-install', params, 'success');
             // 安装成功后询问是否立即切换
             const useNow = await vscode.window.showInformationMessage(
-                `Node ${params} 安装成功，是否立即切换？`,
-                '确定',
-                '取消'
+                `Node ${params} ${this.languagePack['安装成功，是否立即切换？']}`,
+                this.languagePack['确定'],
+                this.languagePack['取消']
             );
-            if (useNow === '确定') {
+            if (useNow === this.languagePack['确定']) {
                 this.executeCommand('nvm-use', params);
             } else {
                 this.webview.postMessage('nvm-install', params, 'installed');
