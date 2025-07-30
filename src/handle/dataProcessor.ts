@@ -24,7 +24,7 @@ export function parseAvList(result: any) {
             'LTS': result
                 .filter((v: { lts: boolean; version: string }) => v.lts)
                 .map((v: { version: string }) => v.version.replace(/^v/, '')),
-            'other': result
+            'Other': result
                 .filter((v: { lts: boolean; version: string }) => !v.lts && /^\d+\.\d+\.\d+$/.test(v.version.replace(/^v/, '')))
                 .map((v: { version: string }) => v.version.replace(/^v/, ''))
         };

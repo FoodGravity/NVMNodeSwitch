@@ -30,7 +30,7 @@ export async function handleNvmVersion() {
 //处理NVM未安装或未正确配置的情况
 export async function handleNvmNoV(platform: string, languagePack: any) {
     const selection = await vscode.window.showErrorMessage(
-        languagePack['NVM未安装或未正确配置，请检查NVM安装路径和环境变量设置。'],
+        languagePack['NVM未安装'],
         platform === 'win' ? languagePack['跳转安装NVM'] : languagePack['安装'],
         languagePack['忽略']
     );
@@ -41,21 +41,39 @@ export async function handleNvmNoV(platform: string, languagePack: any) {
             const terminal = vscode.window.createTerminal(languagePack['NVM安装']);
             terminal.show();
             terminal.sendText('curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash');
-            vscode.window.showInformationMessage(`${languagePack['安装完成后请重启终端或执行:']} source ~/.bashrc`);
+            vscode.window.showInformationMessage(`${languagePack['安装完成后请重启终端:']} source ~/.bashrc`);
         }
     }
 }
-//处理.nvmrc文件
-export function handleNvmrc(version: string) {
+//处理检查nvmrc文件
+export function handleCheckNvmrc() {
     const workspaceRoot = vscode.workspace.rootPath || '';
     const nvmrcPath = path.join(workspaceRoot, '.nvmrc');
     const exists = fs.existsSync(nvmrcPath);
-    // 如果.nvmrc不存在，或version有效，则创建文件
-    if (!exists || extractVersion(version)) { fs.writeFileSync(nvmrcPath, version); }
-    // 读取文件内容
+    const fileContent = fs.readFileSync(nvmrcPath, 'utf8').trim();
+    return { found: exists, version: extractVersion(fileContent) };
+}
+//处理更新nvmrc文件
+export function handleUpdateNvmrc(version: string) {
+    const workspaceRoot = vscode.workspace.rootPath || '';
+    const nvmrcPath = path.join(workspaceRoot, '.nvmrc');
+    fs.writeFileSync(nvmrcPath, version);
     const fileContent = fs.readFileSync(nvmrcPath, 'utf8').trim();
     return extractVersion(fileContent);
 }
+//处理是否是一个项目目录
+export async function IsProjectCreateNvmrc() {
+    const workspaceRoot = vscode.workspace.rootPath || '';
+    // 检查是否是项目目录
+    const isProjectDir = fs.existsSync(path.join(workspaceRoot, 'package.json')) ||
+        fs.existsSync(path.join(workspaceRoot, '.git')) ||
+        fs.existsSync(path.join(workspaceRoot, '.project'));
+    if (!isProjectDir) { return 'not'; }
+    //提醒是一个项目
+    const state = vscode.window.showInformationMessage('似乎是一个项目，是否创建.nvmrc？', '创建', '取消');
+    return state;
+}
+
 //处理引擎推荐版本
 export async function handleEngineRecommendation() {
     const workspaceRoot = vscode.workspace.rootPath || '';
@@ -72,7 +90,7 @@ export async function handleInsList() {
 
 }
 //处理可用版本列表
-export async function handleAvList(source: string) {
+export async function handleAvList(source: string ) {
     if (source?.startsWith('http')) {
         const response = await fetch(source);
         return parseAvList(await response.json());

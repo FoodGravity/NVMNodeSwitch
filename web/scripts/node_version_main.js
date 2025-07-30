@@ -3,7 +3,7 @@ function renderNodeV(nodeV) {
     const section = document.getElementById('node-v');
     if (section) {
         const container = section.querySelector('.content-container');
-        container.innerHTML = nodeV || '未安装';
+        setT(container, nodeV || '未安装');
         container.className = `content-container segmentation ${nodeV ? 'success' : 'warning'}-color`;
         setLoadingState('node-v', false);
     }
@@ -11,7 +11,7 @@ function renderNodeV(nodeV) {
 function renderRecommendVersion(v) {
     const container = document.getElementById('node-recommend')?.querySelector('.content-container');
     if (container) {
-        container.innerHTML = v || '俺不推荐';
+        setT(container, v || '俺不推荐');
         container.className = `content-container segmentation ${v ? 'success' : 'warning'}-color`;
         setLoadingState('node-recommend', false);
     }
@@ -21,12 +21,18 @@ function renderNvmV(nvmV) {
     const sectionId = 'nvm-v';
     const sElement = document.getElementById(sectionId);
     if (sElement) {
+        const container = sElement.querySelector('.content-container');
         if (nvmV) {
             setAllSectionsToNone(false);
-            sElement.querySelector('.content-container').innerHTML = `${nvmV}`;
+            setT(container, nvmV);
         } else {
             setAllSectionsToNone();
-            sElement.querySelector('.content-container').innerHTML = '<a href="https://github.com/coreybutler/nvm-windows/releases" target="_blank">下载nvm-windows</a>';
+            const link = document.createElement('a');
+            link.href = 'https://github.com/coreybutler/nvm-windows/releases';
+            link.target = '_blank';
+            setT(link, '下载nvm-windows');
+            container.innerHTML = '';
+            container.appendChild(link);
         }
         setLoadingState(sectionId, false);
     }
@@ -39,18 +45,24 @@ function renderNvmrcCheck(state, version) {
     const tooltip = document.getElementById(sectionId).querySelector(`.content-container`);
 
     if (state === 'success') {
-        tooltip.innerHTML = version;
+        setT(tooltip, version);
         tooltip.className = `content-container segmentation success-color`;
     }
     else if (state === 'use') {
-        tooltip.innerHTML = `正在切换: ${version}`;
+        setT(tooltip, '切换', `: ${version}`);
         tooltip.className = `content-container segmentation warning-color`;
     } else if (state === 'install') {
-        tooltip.innerHTML = `切换失败：${version}未安装`;
+        setT(tooltip, '安装', `: ${version}`);
         tooltip.className = `content-container segmentation error-color`;
     } else if (state === 'use-fail') {
-        tooltip.innerHTML = `切换失败：${version}`;
+        setT(tooltip, '切换失败', `: ${version}`);
         tooltip.className = `content-container segmentation error-color`;
+    } else if (state === 'nodeInvalid') {
+        setT(tooltip, 'node无效');
+        tooltip.className = `content-container segmentation error-color`;
+    } else if (state === 'not-found') {
+        setT(tooltip, 'nvmrc未找到');
+        tooltip.className = `content-container segmentation warning-color`;
     }
 
     setLoadingState(sectionId, false);
@@ -63,7 +75,7 @@ function renderNvmList(result) {
     //创建按钮
     const containerElement = document.getElementById('installed-versions-container');
     if (containerElement) {
-        containerElement.innerHTML = '';
+        setT(containerElement, '');
         if (result.versions?.length) {
             result.versions.forEach(version => {
                 containerElement.appendChild(
@@ -71,7 +83,7 @@ function renderNvmList(result) {
                 );
             });
         } else {
-            containerElement.innerHTML = '没有已安装的 Node 版本';
+            setT(containerElement, '没有已安装的Node版本');
         }
     }
     setLoadingState(sectionId, false);
@@ -118,7 +130,7 @@ function renderNvmAvailable(data) {
     // setLoadingState(sectionId, true, clean);
     const elementsContainer = document.querySelector('.table-container');
     if (elementsContainer) {
-        elementsContainer.innerHTML = '';
+        setT(elementsContainer, '');
         if (data.avList && Object.keys(data.avList).length) {
             // 动态创建表格元素
             const table = document.createElement('table');
@@ -132,7 +144,7 @@ function renderNvmAvailable(data) {
             const headerRow = document.createElement('tr');
             categories.forEach(category => {
                 const th = document.createElement('th');
-                th.textContent = category;
+                setT(th, category);
                 headerRow.appendChild(th);
             });
             thead.appendChild(headerRow);
@@ -154,7 +166,7 @@ function renderNvmAvailable(data) {
             table.appendChild(tbody);
             elementsContainer.appendChild(table);
         } else {
-            elementsContainer.innerHTML = '没有可用的node版本';
+            setT(elementsContainer, '没有可用的Node版本');
         }
     }
     setLoadingState(sectionId, false);
@@ -203,7 +215,7 @@ function setLoadingState(sectionId, isLoading = true, clean = true) {
     const refreshBtn = section.querySelector(`#refresh-${sectionId}`);
 
     if (isLoading) {
-        if (clean) { container.innerHTML = t.正在获取; }
+        if (clean) { setT(container, '正在获取'); }
         refreshBtn?.classList.add('loading');
     } else {
         refreshBtn?.classList.remove('loading');

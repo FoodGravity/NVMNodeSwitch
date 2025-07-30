@@ -53,7 +53,7 @@ export class BottomBar implements vscode.Disposable {
             label: version === currentVersion ? `$(check) ${version}` : `$(debug-stackframe-dot) ${version}`,
             description: version === currentVersion ? this.manager.languagePack['当前使用版本'] : this.manager.languagePack['点击切换到此版本'],
             version,
-            buttons: [this.createDeleteButton()]
+            buttons: version === currentVersion ? [] : [this.createDeleteButton()]  // 只有非当前版本才显示删除按钮
         }));
     }
 

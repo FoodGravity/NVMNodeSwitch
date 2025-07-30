@@ -133,11 +133,11 @@ export class NVMNodeSwitch {
             this.webview.postMessage('nvm-list-available', '', data);
         }
         else if (sectionId === 'nvmrc-check') {
-            const version = commandHandlers.handleNvmrc('');
+            const { found, version } = commandHandlers.handleCheckNvmrc();
             // 未检测到 .nvmrc，直接写入当前 nodeV 并返回
-            if (!version) {
-                commandHandlers.handleNvmrc(this.nodeV);
-                this.webview.postMessage('nvmrc-check', 'success', this.nodeV);
+            if (!found || !version) {
+                if (!found) { this.webview.postMessage('nvmrc-check', 'not-found', this.nodeV); }
+                this.executeCommand('update-nvmrc');
                 return;
             }
             // .nvmrc 版本已是当前 nodeV
@@ -165,19 +165,24 @@ export class NVMNodeSwitch {
                 }
             }
         }
-        else if (sectionId === 'create-nvmrc') {
+        else if (sectionId === 'update-nvmrc') {
             await this.executeCommand('node-v');
-            commandHandlers.handleNvmrc(this.nodeV);
-            this.webview.postMessage('nvmrc-check', 'success', this.nodeV);
+            if (!this.nodeV) {
+                this.webview.postMessage('nvmrc-check', 'nodeInvalid', this.nodeV);
+                return;
+            }
+            const { found } = commandHandlers.handleCheckNvmrc();
+            if (found || (await commandHandlers.IsProjectCreateNvmrc()) === '创建') {
+                commandHandlers.handleUpdateNvmrc(this.nodeV);
+                this.webview.postMessage('nvmrc-check', 'success', this.nodeV);
+            }
         }
 
         /**以下都是按钮*/
         else if (sectionId === 'nvm-use') {
             const success = await commandHandlers.handleInstallAndUse('use', params, this.languagePack);
             this.webview.postMessage('nvm-use', params, success ? 'current' : 'error');
-            if (success) {
-                this.executeCommand('create-nvmrc', 'check');
-            }
+            if (success) { this.executeCommand('create-nvmrc'); }
         }
         else if (sectionId === 'nvm-install') {
             const success = await commandHandlers.handleInstallAndUse('install', params, this.languagePack);

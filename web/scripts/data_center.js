@@ -85,9 +85,20 @@ function applyLanguagePack() {
     }
 }
 //设置单个元素的语言
-function setT(element, key) {
-    element.textContent = t[key] || key;
-    element.setAttribute('data-locale', key);
+function setT(element, key, addText = '', prefix = false) {
+    if (!element) { return; }
+
+    element.removeAttribute('data-locale');
+    if (!key) {
+        element.textContent = '';
+        return;
+    }
+
+    const translated = t[key] || key;
+    if (t[key]) {
+        element.setAttribute('data-locale', key);
+    }
+    element.textContent = prefix ? addText + translated : translated + addText;
 }
 
 // 初始化时请求语言包
