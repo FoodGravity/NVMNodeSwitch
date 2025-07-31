@@ -18,24 +18,31 @@
             </div>
         </div>
 
-        <div class="horizontal">
-            <div class="section" id="node-v">
-                <div class="title-bar">
-                    <div>Node:</div>
-                    <div class="content-container segmentation" data-locale="正在获取"></div>
-                </div>
+        <div class="section" id="node-v">
+            <div class="title-bar">
+                <div>Node:</div>
+                <div class="content-container segmentation" data-locale="正在获取"></div>
             </div>
-            <!-- <div id="node-recommend" class="section">
+        </div>
+        <!-- <div id="node-recommend" class="section">
                 <div class="title-bar">
                     <div>推荐:</div>
                     <div class="content-container segmentation" data-locale="正在获取"></div>
                 </div>
             </div> -->
-            <div id="nvmrc-check" class="section">
-                <div class="title-bar">
-                    <div>.nvmrc:</div>
-                    <div class="content-container segmentation" data-locale="正在获取"></div>
-                </div>
+        <div id="nvmrc-check" class="section">
+            <div class="title-bar">
+                <div>.nvmrc:</div>
+                <div class="content-container segmentation" data-locale="正在获取"></div>
+            </div>
+        </div>
+        <div id="manual-install" class="section">
+            <div style="display: flex; gap: 8px;">
+                <input type="text" id="manual-version-input" class="uni-btn notInstalled"
+                    style="flex-grow: 1;cursor: text" placeholder="" data-locale="输入版本号安装">
+                <button id="manual-install-btn" class="uni-btn installed" style="min-width: 80px;">
+                    <span class="button-text" data-locale="安装"></span>
+                </button>
             </div>
         </div>
         <div id="nvm-list" class="section">
@@ -48,7 +55,7 @@
         <div id="nvm-list-available" class="section">
             <div class="title-bar">
                 <div class="segmentation" data-locale="可用的Node版本:"></div>
-                <select id="version-source" class="uni-btn source-selector"></select>
+                <select id="version-source" class="uni-btn installed source-selector"></select>
             </div>
             <div class="content-container table-container" id="available-versions-container"></div>
         </div>

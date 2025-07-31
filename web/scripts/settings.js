@@ -59,7 +59,7 @@ function createSettingsContainer(data) {
 
     const languageSelect = document.createElement('select');
     languageSelect.id = 'language-select';
-    languageSelect.className = 'uni-btn source-selector';
+    languageSelect.className = 'uni-btn installed source-selector';
 
     const zhOption = document.createElement('option');
     zhOption.value = 'zh-CN';
@@ -137,7 +137,7 @@ function createSettingsContainer(data) {
     //取消按钮
     const cancelButton = document.createElement('button');
     cancelButton.id = 'cancel-settings';
-    cancelButton.className = 'uni-btn table disabled';
+    cancelButton.className = 'uni-btn table notInstalled';
     cancelButton.disabled = true;
     setT(cancelButton, '取消');
     cancelButton.addEventListener('click', function () {
@@ -148,7 +148,7 @@ function createSettingsContainer(data) {
     // 保存按钮
     const saveButton = document.createElement('button');
     saveButton.id = 'save-settings';
-    saveButton.className = 'uni-btn table disabled';
+    saveButton.className = 'uni-btn table notInstalled';
     saveButton.disabled = true;
     setT(saveButton, '保存设置');
     saveButton.addEventListener('click', function () {
@@ -172,10 +172,10 @@ function createSettingsContainer(data) {
 
         const isChanged = languageChanged || sourcesChanged;
         // 取消按钮
-        cancelButton.className = isChanged ? 'uni-btn table installed' : 'uni-btn table disabled';
+        cancelButton.className = isChanged ? 'uni-btn table installed' : 'uni-btn table disabled notInstalled';
         cancelButton.disabled = !isChanged;
         // 保存按钮
-        saveButton.className = isChanged ? 'uni-btn table current' : 'uni-btn table disabled';
+        saveButton.className = isChanged ? 'uni-btn table current' : 'uni-btn table disabled notInstalled';
         saveButton.disabled = !isChanged;
     }
 
@@ -185,9 +185,9 @@ function createSettingsContainer(data) {
         row.className = 'source-item';
         row.innerHTML = `
         <td>
-        <input type="text" value="${name}" class="uni-btn table" style="width: auto; box-sizing: border-box;"></td>
+        <input type="text" value="${name}" class="uni-btn table notInstalled" style="width: auto; box-sizing: border-box;"></td>
         <td style="width: 100%">
-        <input type="text" value="${url}" class="uni-btn table" style="box-sizing: border-box;"></td>
+        <input type="text" value="${url}" class="uni-btn table notInstalled" style="box-sizing: border-box;"></td>
         <td style="padding: 2px;">
             ${createSvgButton('delete', '').outerHTML}
         </td>

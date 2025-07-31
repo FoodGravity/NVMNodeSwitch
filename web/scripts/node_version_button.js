@@ -4,14 +4,12 @@ function createButtonComponent(text, state, inTable) {
     button.className = `uni-btn${inTable ? ' table' : ''}`;
     button.setAttribute('data', text);
     button.innerHTML = `<span class="button-text">${text}</span>`;
-    // button.textContent = text;
-    console.log('创建按钮:', text, state);
     //更新按钮状态
     updateButtonState(button, state);
     // 点击事件处理
     button.addEventListener('click', async (event) => {
         let command;
-        let state = 'downloading';
+        let state = 'loading';
         //如果点击的是图标且图标是删除图标
         const icon = event.target.closest('.button-icon');
         if (icon && icon.classList.contains('delete')) {
@@ -35,33 +33,22 @@ function createButtonComponent(text, state, inTable) {
 
 // 状态图标映射
 const BUTTON_ICONS = {
-    table: 'download',
+    notInstalled: 'download',
     installed: 'delete',
     current: 'success',
-    downloading: 'loading',
+    loading: 'loading',
     error: 'error',
     confirm: 'confirm',
     success: 'success',
     warning: 'warning',
 };
 function updateButtonState(button, state, iconState) {
-    // 处理状态前缀
-    if (button.classList.contains('table')) { state = 'table.' + state; }
-
     // 重置所有状态类名
     button.classList.remove(...Object.keys(BUTTON_ICONS));
-
-    // 添加新状态类名
-    if (state) {
-        state.split('.').forEach(statePart => button.classList.add(statePart));
-    }
-
-    const activeState = state?.split('.')?.[1] || state;
-
+    button.classList.add(state);
     // 确定要使用的图标类型
-    const iconType = iconState || BUTTON_ICONS[activeState];
+    const iconType = iconState || BUTTON_ICONS[state];
     let iconButton = button.querySelector('.button-icon');
-
     if (iconType) {
         if (iconButton) {
             updateSvgIcon(iconButton, iconType);
@@ -88,6 +75,15 @@ function setVersionButtonState(version, state, iconState) {
         updateButtonState(button, state, iconState);
 
     });
+    const manualInstallBtn = document.getElementById('manual-install-btn');
+    const versionInput = document.getElementById('manual-version-input');
+    const inputVersion = versionInput.value.trim();
+    if (inputVersion === version) {
+        versionInput.className = `uni-btn ${state}`;
+        versionInput.setAttribute('style', `flex-grow: 1;cursor: ${state === 'loading' ? 'wait' : 'text'}`);
+        versionInput.disabled = state === 'loading';
+        updateButtonState(manualInstallBtn, state, iconState);
+    }
 }
 //移除指定版本的非table按钮
 function removeNonTableVersionButtons(version) {
@@ -97,22 +93,5 @@ function removeNonTableVersionButtons(version) {
         if (!button.classList.contains('table')) {
             button.remove();
         }
-    });
-}
-//自动设置指定版本按钮状态
-function autoSetVersionButtonState(version, nodeV, insList) {
-    console.log('自动设置版本按钮状态:', version);
-    const versionButtons = document.querySelectorAll(`.uni-btn[data="${version}"]`);
-    versionButtons.forEach(button => {
-        if (insList.includes(version)) {
-            updateButtonState(button, version === nodeV ? 'current' : 'installed');
-        } else {
-            if (!button.classList.contains('table')) {
-                button.remove();
-            } else {
-                updateButtonState(button, 'table');
-            }
-        }
-
     });
 }

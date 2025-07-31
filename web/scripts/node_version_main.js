@@ -52,7 +52,7 @@ function renderNvmrcCheck(state, version) {
         setT(tooltip, '切换', `: ${version}`);
         tooltip.className = `content-container segmentation warning-color`;
     } else if (state === 'install') {
-        setT(tooltip, '安装', `: ${version}`);
+        setT(tooltip, '未安装', `: ${version}`);
         tooltip.className = `content-container segmentation error-color`;
     } else if (state === 'use-fail') {
         setT(tooltip, '切换失败', `: ${version}`);
@@ -185,13 +185,11 @@ function createVersionButton(version, inTable, nodeV, insList) {
     // 修改状态判断逻辑
     let state;
     if (version === nodeV) {
-        console.log('当前版本:', version, nodeV);
         state = 'current';
     } else if (insList.includes(version)) {
-        console.log('已安装版本:', version, nodeV);
         state = 'installed';
     } else {
-        state = 'table';
+        state = 'notInstalled';
     }
     return createButtonComponent(version, state, inTable);
 }
@@ -261,12 +259,59 @@ function createNvmVSettingButton() {
     titleBar.appendChild(settingBtn);
 }
 
+// 手动安装版本功能
+function handleManualInstall() {
+    const versionInput = document.getElementById('manual-version-input');
+    const version = versionInput.value.trim();
+    if (version && versionInput.classList.contains('notInstalled')) {
+        getData('nvm-install', version);
+    }
+}
+// 手动安装按钮点击事件
+document.getElementById('manual-install-btn')?.addEventListener('click', handleManualInstall);
+// 添加回车键触发安装
+document.getElementById('manual-version-input')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        handleManualInstall();
+    }
+});
+// 验证版本号格式
+function isValidVersion(version) {
+    const currentVersion = version.match(/\d+(?:\.\d+){0,2}/)?.[0] ?? '';
+    if (currentVersion !== '0' && currentVersion !== '0.0' && currentVersion !== '0.0.0') {
+        return currentVersion;
+    }
+    return '';
+}
 
 // 页面加载完成后绑定事件并初始化页面渲染
+// 在 initializePage 函数中添加以下代码
 function initializePage() {
     console.log('页面初始化开始');
     createNvmVSettingButton();
     createAllRefreshButtons();
+
+    // 添加下载图标到手动安装按钮
+    const manualInstallBtn = document.getElementById('manual-install-btn');
+    if (manualInstallBtn) {
+        manualInstallBtn.appendChild(createSvgButton('download', 'manual-install-btn-download'));
+    }
+
+    // 添加输入框版本号验证
+    const versionInput = document.getElementById('manual-version-input');
+    versionInput.addEventListener('input', () => {
+        const version = versionInput.value;
+        const validVersion = isValidVersion(version);
+        console.log('读取的版本号：', version, '转换的版本号:', validVersion);
+        if (validVersion === version && version) {
+            updateButtonState(manualInstallBtn, 'installed', 'download');
+            versionInput.className = 'uni-btn notInstalled';
+        } else {
+            versionInput.className = 'uni-btn warning';
+            updateButtonState(manualInstallBtn, 'warning');
+        }
+    });
+
     setAllSectionsToNone();
     getData('get-setting', { setting: false });
     getData('all');

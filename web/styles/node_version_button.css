@@ -5,17 +5,21 @@
     padding: 0 1px 0 8px;
     position: relative;
     border-radius: 4px;
-    cursor: pointer;
+    /* cursor: pointer; */
+    cursor: not-allowed;
     transition: all 0.2s;
 
     display: flex;
     align-items: center;
     justify-content: center;
-
     gap: 4px;
+
+    /* 基础样式 */
     background-color: var(--vscode-button-secondaryBackground);
     color: var(--vscode-button-secondaryForeground);
-    border: 1px solid var(--vscode-button-border, var(--vscode-contrastBorder, rgba(0,0,0,0.1))); /* 添加回退值 */
+    border: 1px solid var(--vscode-button-border, var(--vscode-contrastBorder, rgba(0, 0, 0, 0.1)));
+
+    /* 添加回退值 */
     overflow: hidden;
 }
 
@@ -28,28 +32,34 @@
 }
 
 .uni-btn.table {
-    background-color: var(--vscode-editor-background);
-    color: var(--vscode-descriptionForeground);
     width: 100%;
     height: 100%;
 }
 
-/* 按钮状态变体 */
+/* 和基础样式一样 */
 .uni-btn.installed {
     background-color: var(--vscode-button-secondaryBackground);
     color: var(--vscode-button-secondaryForeground);
+    cursor: pointer;
 }
 
 .uni-btn.current {
     background-color: var(--vscode-button-background);
     color: var(--vscode-button-foreground);
+    border-color: var(--vscode-button-background);
     font-weight: bold;
 }
 
-.uni-btn.downloading {
-    background-color: var(--vscode-editorInfo-background);
+.uni-btn.notInstalled {
+    background-color: var(--vscode-editor-background);
+    color: var(--vscode-descriptionForeground);
+    cursor: pointer;
+}
+
+.uni-btn.loading {
     color: var(--vscode-editorInfo-foreground);
     border-color: color-mix(in srgb, var(--vscode-editorInfo-foreground) 30%, transparent);
+    cursor: wait;
 }
 
 .uni-btn.confirm,
@@ -69,52 +79,74 @@
     border-color: color-mix(in srgb, var(--vscode-testing-iconQueued) 30%, transparent);
 }
 
-.uni-btn.warning:hover {
-    color: var(--vscode-testing-iconQueued);
-    border-color: var(--vscode-testing-iconQueued);
-}
-
 /* 统一悬停效果 */
 .uni-btn:hover {
     background-color: var(--vscode-list-hoverBackground);
     color: var(--vscode-list-hoverForeground);
-    border-color: var(--vscode-list-hoverBackground);
-    border: 1px solid var(--vscode-button-hoverBackground);
+    border-color: var(--vscode-button-hoverBackground);
 }
 
 .uni-btn.current:hover {
     background-color: color-mix(in srgb, var(--vscode-button-background) 50%, transparent);
 }
 
-.uni-btn.downloading:hover {
-    background-color: var(--vscode-editorInfo-background);
+.uni-btn.warning:hover {
+    color: var(--vscode-testing-iconQueued);
+    border-color: currentColor;
+}
+
+.uni-btn.loading:hover {
     color: var(--vscode-editorInfo-foreground);
-    border-color: var(--vscode-editorInfo-foreground);
+    border-color: currentColor;
+}
+
+.uni-btn.success:hover {
+    color: var(--vscode-testing-iconPassed);
+    border-color: currentColor;
 }
 
 .uni-btn.confirm:hover,
 .uni-btn.error:hover {
     background-color: var(--vscode-editorError-background);
     color: var(--vscode-editorError-foreground);
-    border-color: var(--vscode-editorError-foreground);
+    border-color: currentColor;
 }
 
-
-.uni-btn.success:hover {
-    color: var(--vscode-testing-iconPassed);
-    border-color: var(--vscode-testing-iconPassed);
+.uni-btn:disabled {
+    cursor: not-allowed;
+    background-color: var(--vscode-editor-background);
+    color: var(--vscode-descriptionForeground);
+    border-color: var(--vscode-editor-background);
 }
+
+.uni-btn:disabled:hover {
+    background-color: var(--vscode-editor-background);
+    color: var(--vscode-descriptionForeground);
+    border-color: var(--vscode-editor-background);
+}
+
+.uni-btn:focus {
+    outline: none;
+    border-color: var(--vscode-button-hoverBackground);
+}
+
+.uni-btn:not(.installed):not(.current):not(.notInstalled):focus {
+    border-color: currentColor;
+}
+
+/* .uni-btn.warning:focus,
+.uni-btn.loading:focus,
+.uni-btn.success:focus,
+.uni-btn.confirm:focus,
+.uni-btn.error:focus {
+    border-color: currentColor;
+} */
 
 .source-selector {
     margin-left: auto;
     padding: 0 1px 0 8px;
 }
 
-.source-selector:focus {
-    outline: none;
-    border-color: var(--vscode-focusBorder);
-    box-shadow: 0 0 0 1px var(--vscode-focusBorder);
-}
 
 .source-selector option {
     background-color: var(--vscode-dropdown-background);
@@ -125,15 +157,4 @@
 .source-selector option:checked {
     background-color: var(--vscode-list-activeSelectionBackground);
     color: var(--vscode-list-activeSelectionForeground);
-}
-
-
-.uni-btn:disabled {
-    cursor: not-allowed;
-}
-
-.uni-btn:disabled:hover {
-    background-color: var(--vscode-editor-background);
-    color: var(--vscode-descriptionForeground);
-    border: 1px solid var(--vscode-editor-background);
 }

@@ -41,7 +41,7 @@ export class BottomBar implements vscode.Disposable {
     private createDeleteButton(): vscode.QuickInputButton {
         return {
             iconPath: new vscode.ThemeIcon('close'),
-            tooltip: this.manager.languagePack['删除此版本']
+            tooltip: this.manager.getT('删除此版本')
         };
     }
 
@@ -51,7 +51,7 @@ export class BottomBar implements vscode.Disposable {
     ): CustomQuickPickItem[] {
         return versions.map(version => ({
             label: version === currentVersion ? `$(check) ${version}` : `$(debug-stackframe-dot) ${version}`,
-            description: version === currentVersion ? this.manager.languagePack['当前使用版本'] : this.manager.languagePack['点击切换到此版本'],
+            description: version === currentVersion ? this.manager.getT('当前使用版本') : this.manager.getT('点击切换到此版本'),
             version,
             buttons: version === currentVersion ? [] : [this.createDeleteButton()]  // 只有非当前版本才显示删除按钮
         }));
@@ -59,7 +59,7 @@ export class BottomBar implements vscode.Disposable {
 
     private createQuickPick(items: CustomQuickPickItem[]): vscode.QuickPick<CustomQuickPickItem> {
         const quickPick = vscode.window.createQuickPick<CustomQuickPickItem>();
-        quickPick.placeholder = this.manager.languagePack['选择Node版本或输入新版本号安装'];
+        quickPick.placeholder = this.manager.getT('选择Node版本或输入新版本号安装');
         quickPick.items = items;
         return quickPick;
     }
@@ -89,14 +89,14 @@ export class BottomBar implements vscode.Disposable {
 
             const filteredItems = items.filter(item =>
                 item.version.includes(normalizedVersion) &&
-                !item.label.includes(this.manager.languagePack['安装'])
+                !item.label.includes(this.manager.getT('安装'))
             );
 
             quickPick.items = filteredItems.length > 0
                 ? filteredItems
                 : [{
-                    label: `$(add) ${this.manager.languagePack['安装']} ${normalizedVersion}`,
-                    description: this.manager.languagePack['按Enter安装此版本'],
+                    label: `$(add) ${this.manager.getT('安装')} ${normalizedVersion}`,
+                    description: this.manager.getT('按Enter安装此版本'),
                     version: normalizedVersion,
                     buttons: [this.createDeleteButton()]
                 }];
@@ -115,7 +115,7 @@ export class BottomBar implements vscode.Disposable {
                     quickPick.hide();
                     return;
                 }
-                const action = activeItem.label.includes(this.manager.languagePack['安装']) ? 'nvm-install' : 'nvm-use';
+                const action = activeItem.label.includes(this.manager.getT('安装')) ? 'nvm-install' : 'nvm-use';
                 resolve([action, activeItem.version]);
                 quickPick.hide();
             });

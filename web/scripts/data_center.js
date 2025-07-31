@@ -27,7 +27,7 @@ window.addEventListener('message', async (event) => {
     // 设置加载状态
     if (data === 'loading') {
         if (sectionId === 'nvm-use' || sectionId === 'nvm-install' || sectionId === 'nvm-uninstall') {
-            setVersionButtonState(params, sectionId === 'nvm-install' ? 'warning' : 'downloading', 'loading');
+            setVersionButtonState(params, sectionId === 'nvm-uninstall' ? 'warning' : 'loading');
         } else {
             setLoadingState(sectionId, true, params !== 'noClear');
         }
@@ -63,7 +63,7 @@ window.addEventListener('message', async (event) => {
     else if (sectionId === 'nvm-uninstall') {
         if (data === 'success') {
             removeNonTableVersionButtons(params);
-            setVersionButtonState(params, 'table');
+            setVersionButtonState(params, 'notInstalled');
         } else if (data === 'cancelled') {
             setVersionButtonState(params, 'installed');
         }
@@ -76,19 +76,25 @@ window.addEventListener('message', async (event) => {
 
 
 function applyLanguagePack() {
-    // 遍历语言包并应用到界面元素
-    for (const [key, value] of Object.entries(t)) {
-        const elements = document.querySelectorAll(`[data-locale="${key}"]`);
-        elements.forEach(el => {
-            el.textContent = value;
-        });
-    }
+    //获取所有包含data-locale的元素
+    const elements = document.querySelectorAll(`[data-locale]`);
+    elements.forEach(el => {
+        const key = el.getAttribute('data-locale');
+        const addText = el.getAttribute('addText') || '';
+        setT(el, key, addText);
+        
+        // 新增：处理input元素的placeholder
+        if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
+            const translated = t[key] || key;
+            el.placeholder = translated + addText;
+        }
+    });
 }
 //设置单个元素的语言
-function setT(element, key, addText = '', prefix = false) {
+function setT(element, key, addText = '') {
     if (!element) { return; }
-
     element.removeAttribute('data-locale');
+    element.removeAttribute('addText');
     if (!key) {
         element.textContent = '';
         return;
@@ -97,8 +103,11 @@ function setT(element, key, addText = '', prefix = false) {
     const translated = t[key] || key;
     if (t[key]) {
         element.setAttribute('data-locale', key);
+        if (addText) {
+            element.setAttribute('addText', addText);
+        }
     }
-    element.textContent = prefix ? addText + translated : translated + addText;
+    element.textContent = translated + addText;
 }
 
 // 初始化时请求语言包

@@ -2,7 +2,7 @@
   "name": "nvm-node-switch",
   "displayName": "NVM Node Switch",
   "description": "俺第一个插件，试试水，\n基于.nvmrc的Node版本自动切换工具，提供以下功能：\n- 自动检测并切换工作区.nvmrc指定版本\n- 智能推荐package.json适配的Node版本\n- 可视化管理已安装/可用Node版本（安装/切换/删除）\n- 支持nvm、nodejs官方和npmmirror多版本源",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "icon": "icon.png",
   "publisher": "FoodGravity",
   "repository": {

@@ -47,5 +47,7 @@
     "Other": "Other",
     "这好像是个项目，要创建.nvmrc吗？": "This seems to be a project, create .nvmrc?",
     "这好像不是项目，不用创建.nvmrc吧？": "This does not seem to be a project, do not create .nvmrc?",
-    "创建": "Create"
+    "创建": "Create",
+    "不创建": "Do not create",
+    "输入版本号安装":"Enter version number for installation"
 }

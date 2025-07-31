@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { parseInsList, parseAvList } from './dataProcessor';
 import { localExecuteCommand } from './processUtils';
+type getTFunc = (key: string) => string;
 /**
  * extractVersion("v1.2.3"); // 返回 "1.2.3"
  * extractVersion("version 4.5"); // 返回 "4.5"
@@ -28,20 +29,20 @@ export async function handleNvmVersion() {
     return extractVersion(result.output);
 }
 //处理NVM未安装或未正确配置的情况
-export async function handleNvmNoV(platform: string, languagePack: any) {
+export async function handleNvmNoV(platform: string, getT:getTFunc) {
     const selection = await vscode.window.showErrorMessage(
-        languagePack['NVM未安装'],
-        platform === 'win' ? languagePack['跳转安装NVM'] : languagePack['安装'],
-        languagePack['忽略']
+        getT('NVM未安装'),
+        platform === 'win' ? getT('跳转安装NVM') : getT('安装'),
+        getT('忽略')
     );
-    if (selection === languagePack['跳转安装NVM'] || selection === languagePack['安装']) {
+    if (selection === getT('跳转安装NVM') || selection === getT('安装')) {
         if (platform === 'win') {
             vscode.env.openExternal(vscode.Uri.parse('https://github.com/coreybutler/nvm-windows/releases'));
         } else if (platform === 'linux' || platform === 'mac') {
-            const terminal = vscode.window.createTerminal(languagePack['NVM安装']);
+            const terminal = vscode.window.createTerminal(getT('NVM安装'));
             terminal.show();
             terminal.sendText('curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash');
-            vscode.window.showInformationMessage(`${languagePack['安装完成后请重启终端:']} source ~/.bashrc`);
+            vscode.window.showInformationMessage(`${getT('安装完成后请重启终端:')} source ~/.bashrc`);
         }
     }
 }
@@ -50,8 +51,9 @@ export function handleCheckNvmrc() {
     const workspaceRoot = vscode.workspace.rootPath || '';
     const nvmrcPath = path.join(workspaceRoot, '.nvmrc');
     const exists = fs.existsSync(nvmrcPath);
-    const fileContent = fs.readFileSync(nvmrcPath, 'utf8').trim();
-    return { found: exists, version: extractVersion(fileContent) };
+    let version = '';
+    if (exists) { version = extractVersion(fs.readFileSync(nvmrcPath, 'utf8').trim()); }
+    return { found: exists, version };
 }
 //处理更新nvmrc文件
 export function handleUpdateNvmrc(version: string) {
@@ -62,16 +64,16 @@ export function handleUpdateNvmrc(version: string) {
     return extractVersion(fileContent);
 }
 //处理是否是一个项目目录
-export async function IsProjectCreateNvmrc(languagePack: any) {
+export async function IsProjectCreateNvmrc(getT:getTFunc) {
     const workspaceRoot = vscode.workspace.rootPath || '';
     // 检查是否是项目目录
     const isProjectDir = fs.existsSync(path.join(workspaceRoot, 'package.json')) ||
         fs.existsSync(path.join(workspaceRoot, '.git')) ||
         fs.existsSync(path.join(workspaceRoot, '.project'));
     const state = await vscode.window.showInformationMessage(
-        isProjectDir ? languagePack['这好像是个项目，要创建.nvmrc吗？'] : languagePack['这好像不是项目，不用创建.nvmrc吧？'],
-        languagePack['创建'], languagePack['不创建']);
-    return state === languagePack['创建'];
+        isProjectDir ? getT('这好像是个项目，要创建.nvmrc吗？') : getT('这好像不是项目，不用创建.nvmrc吧？'),
+        getT('创建'), getT('不创建'));
+    return state === getT('创建');
 }
 
 //处理引擎推荐版本
@@ -100,13 +102,13 @@ export async function handleAvList(source: string) {
     }
 }
 //安装和使用
-export async function handleInstallAndUse(operation: 'install' | 'use', version: string, languagePack: any) {
+export async function handleInstallAndUse(operation: 'install' | 'use', version: string, getT:getTFunc) {
     let success = true;
     await vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
         title: operation === 'install'
-            ? `${languagePack['正在安装Node']} ${version}`
-            : `${languagePack['正在切换Node']} ${version}`,
+            ? `${getT('正在安装Node')} ${version}`
+            : `${getT('正在切换Node')} ${version}`,
         cancellable: false
     }, async () => {
         const result = await localExecuteCommand(`nvm ${operation} ${version}`);
@@ -116,20 +118,20 @@ export async function handleInstallAndUse(operation: 'install' | 'use', version:
     return success;
 }
 //处理确认删除
-export async function handleConfirmDelete(version: string, languagePack: any) {
+export async function handleConfirmDelete(version: string, getT:getTFunc) {
     const result = await vscode.window.showWarningMessage(
-        `${languagePack['删除Node']}: ${version}?`,
+        `${getT('删除')}Node: ${version}?`,
         { modal: true },
-        languagePack['确定']
+        getT('确定')
     );
-    return result === languagePack['确定'];
+    return result === getT('确定');
 }
 //处理删除版本
-export async function handleDeleteVersion(version: string, languagePack: any) {
+export async function handleDeleteVersion(version: string, getT:getTFunc) {
     let success = false;
     await vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
-        title: `${languagePack['正在删除Node']} ${version}`,
+        title: `${getT('正在删除Node')} ${version}`,
         cancellable: false
     }, async () => {
         const result = await localExecuteCommand(`nvm uninstall ${version}`);
@@ -144,10 +146,9 @@ export async function handleDeleteVersion(version: string, languagePack: any) {
 
         //     return new Promise(resolve => setTimeout(resolve, 3000));
         // });
-        vscode.window.showInformationMessage(`Node:${version} ${languagePack['已成功删除']}`);
+        vscode.window.showInformationMessage(`Node:${version} ${getT('已成功删除')}`);
     } else {
-        vscode.window.showErrorMessage(`Node:${version} ${languagePack['删除失败']}`);
+        vscode.window.showErrorMessage(`Node:${version} ${getT('删除失败')}`);
     }
     return success;
 }
-
