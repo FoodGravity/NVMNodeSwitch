@@ -72,15 +72,30 @@ function renderNvmrcCheck(state, version) {
 // 2. 渲染已安装版本列表
 function renderNvmList(result) {
     const sectionId = 'nvm-list';
-    //创建按钮
     const containerElement = document.getElementById('installed-versions-container');
     if (containerElement) {
         setT(containerElement, '');
         if (result.versions?.length) {
+            // 按主版本号分组
+            const versionGroups = {};
             result.versions.forEach(version => {
-                containerElement.appendChild(
-                    createVersionButton(version, false, result.currentVersion, result.versions)
-                );
+                const majorVersion = version.split('.')[0];
+                if (!versionGroups[majorVersion]) {
+                    versionGroups[majorVersion] = [];
+                }
+                versionGroups[majorVersion].push(version);
+            });
+
+            // 创建分组容器并添加按钮
+            Object.keys(versionGroups).sort((a, b) => b - a).forEach(majorVersion => {
+                const groupContainer = document.createElement('div');
+                groupContainer.className = 'uni-btn-s';
+                versionGroups[majorVersion].forEach(version => {
+                    groupContainer.appendChild(
+                        createVersionButton(version, false, result.currentVersion, result.versions)
+                    );
+                });
+                containerElement.appendChild(groupContainer);
             });
         } else {
             setT(containerElement, '没有已安装的Node版本');

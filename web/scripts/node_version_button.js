@@ -78,7 +78,7 @@ function setVersionButtonState(version, state, iconState) {
     const manualInstallBtn = document.getElementById('manual-install-btn');
     const versionInput = document.getElementById('manual-version-input');
     const inputVersion = versionInput.value.trim();
-    if (inputVersion === version) {
+    if (inputVersion === version && state !== 'installed') {
         versionInput.className = `uni-btn ${state}`;
         versionInput.setAttribute('style', `flex-grow: 1;cursor: ${state === 'loading' ? 'wait' : 'text'}`);
         versionInput.disabled = state === 'loading';

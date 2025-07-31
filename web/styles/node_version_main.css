@@ -13,7 +13,7 @@
 /* 每个版块样式 */
 .section {
     padding: 4px;
-    background-color: var(--vscode-editorSuggestWidget-background);
+    background-color: var(--vscode-editor-background);
     border-radius: 4px;
     gap: 4px;
     display: flex;
@@ -22,6 +22,8 @@
     overflow: hidden;
     min-height: 0;
 }
+
+
 
 #nvm-list-available {
     flex: 1;
@@ -39,17 +41,24 @@
     margin-right: auto;
 }
 
+.list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
 /* Node 版本按钮容器样式 */
 .uni-btn-s {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
+    /* padding: 2px; */
     justify-content: left;
     max-height: 300px;
     overflow: auto;
+    /* background-color: var(--vscode-editorWidget-background);
+    border-radius: 4px;
+    border: 1px solid var(--vscode-editor-lineHighlightBorder); */
 }
-
-
 
 /* 优化表格容器样式 */
 .table-container {

@@ -188,17 +188,21 @@ export class NVMNodeSwitch {
         }
         else if (sectionId === 'nvm-install') {
             const success = await commandHandlers.handleInstallAndUse('install', params, this.getT.bind(this));
-
             if (!success) { this.webview.postMessage('nvm-install', params, 'error'); return; }
 
             await this.executeCommand('nvm-list', 'noClear');
             this.webview.postMessage('nvm-install', params, 'success');
+            // 设置3秒后发送installed的计时器
+            const timer = setTimeout(() => {
+                this.webview.postMessage('nvm-install', params, 'installed');
+            }, 2500);
             // 安装成功后询问是否立即切换
             const useNow = await vscode.window.showInformationMessage(
                 `Node ${params} ${this.getT('安装成功，是否立即切换？')}`,
                 this.getT('确定'),
                 this.getT('取消')
             );
+            clearTimeout(timer);
             if (useNow === this.getT('确定')) {
                 this.executeCommand('nvm-use', params);
             } else {

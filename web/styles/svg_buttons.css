@@ -1,6 +1,6 @@
 /* 图标样式 */
 .button-icon {
-    cursor: pointer;
+    cursor: not-allowed;
 
     /* width: 24px;
     height: 24px; */
@@ -22,6 +22,13 @@
     flex-shrink: 0;
 }
 
+.button-icon:not(.loading):not(.confirm):not(.error):not(.warning):not(.success):not(.forbidden) {
+    cursor: pointer;
+}
+
+.button-icon.loading {
+    cursor: wait;
+}
 
 .button-icon.refresh {
     background-color: var(--vscode-button-secondaryBackground);
@@ -46,6 +53,15 @@
     stroke: currentColor;
     animation: spin 1s linear infinite;
     transform-origin: center;
+}
+
+.button-icon:focus {
+    outline: none;
+    box-shadow: 0 0 0 1px currentColor;
+}
+
+.button-icon:not(.loading):not(.confirm):not(.error):not(.warning):focus {
+    box-shadow: 0 0 0 1px var(--vscode-button-hoverBackground);
 }
 
 @keyframes spin {
