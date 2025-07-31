@@ -34,6 +34,8 @@ window.addEventListener('message', async (event) => {
     }
     else if (sectionId === 'node-v') {
         renderNodeV(data);
+        resetCurrentButtons();
+        setVersionButtonState(data, 'current');
     }
     else if (sectionId === 'node-recommend') {
         renderRecommendVersion(data);

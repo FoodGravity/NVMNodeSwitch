@@ -11,36 +11,57 @@ export class NVMNodeSwitch {
         throw new Error('Method not implemented.');
     }
     public context: vscode.ExtensionContext;
-    public outputChannel: vscode.OutputChannel;
+    public outputChannel: vscode.OutputChannel | undefined;
     public webview: Webview;
     public bottomBar: BottomBar;
     private languagePack: { [key: string]: string } = {};
-
     public log(message: string): void {
-        this.outputChannel.appendLine(message);
+        if (this.outputChannel) {
+            this.outputChannel.appendLine(message);
+        }
     }
-
     constructor(context: vscode.ExtensionContext) {
         this.context = context;
+        if (context.extensionMode === vscode.ExtensionMode.Development) {
         this.outputChannel = vscode.window.createOutputChannel('NVMNode版本切换');
+        }
         this.bottomBar = new BottomBar(this);
         this.webview = new Webview(this);
         // 确保 languagePack 在构造函数中初始化
         this.languagePack = this.getLanguagePack() || {};
         this.context.subscriptions.push(this.bottomBar, this.webview);
-    }
 
-    public activate() {
-        setDefaultEncoding(this.log.bind(this));
-        // 添加配置变化监听
+
         this.context.subscriptions.push(
+            // 配置文件变化监听
             vscode.workspace.onDidChangeConfiguration(e => {
                 if (e.affectsConfiguration('nvmNodeSwitch.language')) {
                     this.languagePack = this.getLanguagePack();
                     this.executeCommand('get-languagePack');
                 }
-            })
+            }),
+            // 添加窗口状态监听
+            vscode.window.onDidChangeWindowState(async state => {
+                this.log(`VS Code 窗口状态变化: ${state.focused ? '活跃' : '非活跃'}`);
+                if (state.focused) {
+                    await this.executeCommand('node-v');
+                    await this.executeCommand('nvmrc-check');
+                    // 获取当前工作区路径
+                    const workspaceFolders = vscode.workspace.workspaceFolders;
+                    if (workspaceFolders) {
+                        const firstWorkspaceFolder = workspaceFolders[0];
+                        const workspacePath = firstWorkspaceFolder.uri.fsPath;
+                        this.log(`当前工作区路径是: ${workspacePath}`);
+                    } else {
+                        this.log('当前没有打开任何工作区');
+                    }
+                }
+            }),
+
         );
+    }
+    public activate() {
+        setDefaultEncoding(this.log.bind(this));
         this.initialCommand();
     }
     // 公共变量
@@ -69,7 +90,9 @@ export class NVMNodeSwitch {
 
         // 新增设置相关命令处理
         if (sectionId === 'get-setting') {
+            //用户配置 
             const config = vscode.workspace.getConfiguration('nvmNodeSwitch');
+            //默认配置
             const packageJson = require('../package.json');
             const defaultConfig = packageJson.contributes.configuration.properties;
 

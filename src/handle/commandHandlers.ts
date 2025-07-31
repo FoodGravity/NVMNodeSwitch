@@ -29,7 +29,7 @@ export async function handleNvmVersion() {
     return extractVersion(result.output);
 }
 //处理NVM未安装或未正确配置的情况
-export async function handleNvmNoV(platform: string, getT:getTFunc) {
+export async function handleNvmNoV(platform: string, getT: getTFunc) {
     const selection = await vscode.window.showErrorMessage(
         getT('NVM未安装'),
         platform === 'win' ? getT('跳转安装NVM') : getT('安装'),
@@ -46,9 +46,14 @@ export async function handleNvmNoV(platform: string, getT:getTFunc) {
         }
     }
 }
+//获取工作区路径
+export function getWorkspaceRoot() {
+    return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
+}
 //处理检查nvmrc文件
 export function handleCheckNvmrc() {
-    const workspaceRoot = vscode.workspace.rootPath || '';
+    const workspaceRoot = getWorkspaceRoot();
+    if (!workspaceRoot) { return { found: false, version: '' }; }
     const nvmrcPath = path.join(workspaceRoot, '.nvmrc');
     const exists = fs.existsSync(nvmrcPath);
     let version = '';
@@ -57,15 +62,17 @@ export function handleCheckNvmrc() {
 }
 //处理更新nvmrc文件
 export function handleUpdateNvmrc(version: string) {
-    const workspaceRoot = vscode.workspace.rootPath || '';
+    const workspaceRoot = getWorkspaceRoot();
+    if (!workspaceRoot) { return ''; }
     const nvmrcPath = path.join(workspaceRoot, '.nvmrc');
     fs.writeFileSync(nvmrcPath, version);
     const fileContent = fs.readFileSync(nvmrcPath, 'utf8').trim();
     return extractVersion(fileContent);
 }
 //处理是否是一个项目目录
-export async function IsProjectCreateNvmrc(getT:getTFunc) {
-    const workspaceRoot = vscode.workspace.rootPath || '';
+export async function IsProjectCreateNvmrc(getT: getTFunc) {
+    const workspaceRoot = getWorkspaceRoot();
+    if (!workspaceRoot) { return false; }
     // 检查是否是项目目录
     const isProjectDir = fs.existsSync(path.join(workspaceRoot, 'package.json')) ||
         fs.existsSync(path.join(workspaceRoot, '.git')) ||
@@ -78,10 +85,10 @@ export async function IsProjectCreateNvmrc(getT:getTFunc) {
 
 //处理引擎推荐版本
 export async function handleEngineRecommendation() {
-    const workspaceRoot = vscode.workspace.rootPath || '';
+    const workspaceRoot = getWorkspaceRoot();
+    if (!workspaceRoot) { return ''; }
     const pkgPath = path.join(workspaceRoot, 'package.json');
     if (!fs.existsSync(pkgPath)) { return null; }
-
     const pkgJson = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
     return extractVersion(pkgJson.engines?.node);
 }
@@ -102,7 +109,7 @@ export async function handleAvList(source: string) {
     }
 }
 //安装和使用
-export async function handleInstallAndUse(operation: 'install' | 'use', version: string, getT:getTFunc) {
+export async function handleInstallAndUse(operation: 'install' | 'use', version: string, getT: getTFunc) {
     let success = true;
     await vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
@@ -118,7 +125,7 @@ export async function handleInstallAndUse(operation: 'install' | 'use', version:
     return success;
 }
 //处理确认删除
-export async function handleConfirmDelete(version: string, getT:getTFunc) {
+export async function handleConfirmDelete(version: string, getT: getTFunc) {
     const result = await vscode.window.showWarningMessage(
         `${getT('删除')}Node: ${version}?`,
         { modal: true },
@@ -127,7 +134,7 @@ export async function handleConfirmDelete(version: string, getT:getTFunc) {
     return result === getT('确定');
 }
 //处理删除版本
-export async function handleDeleteVersion(version: string, getT:getTFunc) {
+export async function handleDeleteVersion(version: string, getT: getTFunc) {
     let success = false;
     await vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
