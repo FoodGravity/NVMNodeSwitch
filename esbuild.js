@@ -1,7 +1,8 @@
+const fs = require('fs');
 const esbuild = require("esbuild");
-
 const production = process.argv.includes('--production');
 const watch = process.argv.includes('--watch');
+const htmlMinifier = require('html-minifier');
 
 /**
  * @type {import('esbuild').Plugin}
@@ -24,30 +25,79 @@ const esbuildProblemMatcherPlugin = {
 };
 
 async function main() {
-	const ctx = await esbuild.context({
-		entryPoints: [
-			'src/extension.ts'
-		],
+	// 打包 extension.ts
+	const extensionCtx = await esbuild.context({
+		entryPoints: ['src/extension.ts'],
 		bundle: true,
 		format: 'cjs',
 		minify: production,
 		sourcemap: !production,
 		sourcesContent: false,
 		platform: 'node',
-		outfile: 'dist/extension.js',
-		external: ['vscode'],
-		logLevel: 'silent',
-		plugins: [
-			/* add to the end of plugins array */
-			esbuildProblemMatcherPlugin,
+		outdir: 'dist',
+		external: [
+			'vscode',
+			'html-minifier',
+			'vsce',
+			// 'node',
+			'esbuild'
 		],
-
+		logLevel: 'silent',
+		plugins: [esbuildProblemMatcherPlugin],
 	});
+
+	// 打包 web 资源
+	const webCtx = await esbuild.context({
+		entryPoints: [
+			'web/NVMNodeSwitch.html',
+			'web/scripts/*.js',
+			'web/styles/*.css'
+		],
+		bundle: false,
+		minify: production,
+		outdir: 'dist/web',
+		loader: {
+			'.html': 'copy',
+			'.css': 'css',
+			'.js': 'js'
+		},
+		plugins: [
+			{
+				name: 'html-minifier',
+				setup(build) {
+					if (production || watch) {
+						build.onLoad({ filter: /\.html$/ }, async (args) => {
+							const contents = await fs.promises.readFile(args.path, 'utf8');
+							const minified = htmlMinifier.minify(contents, {
+								collapseWhitespace: true,
+								removeComments: true,
+								minifyCSS: true,
+								minifyJS: true,
+								// 保留引号避免路径问题
+								removeAttributeQuotes: false,
+								removeEmptyAttributes: true,
+								// 保留URI格式
+								conservativeCollapse: true
+							});
+							return { contents: minified, loader: 'copy' };
+						});
+					}
+				}
+			}
+		],
+		charset: 'utf8'
+	});
+
 	if (watch) {
-		await ctx.watch();
+		await Promise.all([
+			extensionCtx.watch(),
+			webCtx.watch()
+		]);
 	} else {
-		await ctx.rebuild();
-		await ctx.dispose();
+		await Promise.all([
+			extensionCtx.rebuild().then(() => extensionCtx.dispose()),
+			webCtx.rebuild().then(() => webCtx.dispose())
+		]);
 	}
 }
 

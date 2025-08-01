@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import * as fs from 'fs';
 import type { NVMNodeSwitch } from './extension';
 
 export class Webview implements vscode.Disposable {
@@ -13,13 +12,12 @@ export class Webview implements vscode.Disposable {
     }
 
     private setupWebview() {
-        // 提取公共路径部分
-        const webPath = path.join(this.manager.context.extensionPath, 'web');
-        // 注册 Webview 视图提供者
+        // 修改为使用 dist 目录
+        const webPath = path.join(this.manager.context.extensionPath, 'dist', 'web');
+        
         vscode.window.registerWebviewViewProvider('NVMNodeSwitchWebview', {
             resolveWebviewView: async (view) => {
                 this.view = view;
-                // 配置 Webview 选项
                 view.webview.options = {
                     enableScripts: true,
                     localResourceRoots: [
@@ -27,7 +25,7 @@ export class Webview implements vscode.Disposable {
                     ]
                 };
 
-                // 读取并处理 HTML 内容
+                // 修改 HTML 路径指向 dist
                 const htmlPath = vscode.Uri.file(path.join(webPath, 'NVMNodeSwitch.html'));
                 const htmlContent = await vscode.workspace.fs.readFile(htmlPath);
                 let html = Buffer.from(htmlContent).toString('utf8');

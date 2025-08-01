@@ -20,13 +20,13 @@ export function extractVersion(version: string) {
 }
 //处理node版本
 export async function handleNodeVersion() {
-    const result = await localExecuteCommand('node -v');
-    return extractVersion(result.output);
+    const { output, error } = await localExecuteCommand('node -v');
+    return extractVersion(output);
 }
 //处理NVM版本
 export async function handleNvmVersion() {
-    const result = await localExecuteCommand('nvm v');
-    return extractVersion(result.output);
+    const { output, error } = await localExecuteCommand('nvm v');
+    return { nvmV:extractVersion(output), error };
 }
 //处理NVM未安装或未正确配置的情况
 export async function handleNvmNoV(platform: string, getT: getTFunc) {
@@ -119,7 +119,7 @@ export async function handleInstallAndUse(operation: 'install' | 'use', version:
         cancellable: false
     }, async () => {
         const result = await localExecuteCommand(`nvm ${operation} ${version}`);
-        if (result.errorOutput) { success = false; }
+        if (result.error) { success = false; }
         version = extractVersion(result.output) || version;
     });
     return success;
@@ -142,7 +142,7 @@ export async function handleDeleteVersion(version: string, getT: getTFunc) {
         cancellable: false
     }, async () => {
         const result = await localExecuteCommand(`nvm uninstall ${version}`);
-        success = !result.errorOutput;
+        success = !result.error;
     });
     if (success) {
         // await vscode.window.withProgress({

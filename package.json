@@ -2,7 +2,7 @@
   "name": "nvm-node-switch",
   "displayName": "NVM Node Switch",
   "description": "Auto-switch Node versions on .nvmrc or manually install new node\n基于.nvmrc自动切换Node或手动安装新版本",
-  "version": "0.0.37",
+  "version": "0.0.48",
   "icon": "icon.png",
   "publisher": "FoodGravity",
   "repository": {
@@ -104,9 +104,11 @@
     "test": "vscode-test"
   },
   "devDependencies": {
+    "@types/html-minifier": "^4.0.5",
     "@types/node": "^24.1.0",
-    "@types/vscode": "^1.102.0",
+    "@types/vscode": "^1.97.0",
+    "@vscode/vsce": "^3.6.1-2",
     "esbuild": "^0.25.8",
-    "iconv-lite": "^0.6.3"
+    "html-minifier": "^4.0.0"
   }
 }

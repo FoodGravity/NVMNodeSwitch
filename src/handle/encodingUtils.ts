@@ -1,5 +1,6 @@
-import * as iconv from 'iconv-lite';
 import { spawn } from 'child_process';
+import { TextDecoder } from 'util'; // Node.js 内置模块
+
 let DEFAULT_ENCODING = 'GB2312';
 
 const CODE_PAGE_TO_ENCODING: { [key: string]: string } = {
@@ -14,7 +15,7 @@ const CODE_PAGE_TO_ENCODING: { [key: string]: string } = {
 
 /** 解码命令输出缓冲区为字符串 */
 export const decodeOutput = (buffer: Buffer): string => {
-    return iconv.decode(buffer, DEFAULT_ENCODING).replace(/\0/g, '');
+    return new TextDecoder(DEFAULT_ENCODING).decode(buffer).replace(/\0/g, '');
 };
 
 /** 设置默认编码 */

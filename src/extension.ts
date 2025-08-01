@@ -137,8 +137,9 @@ export class NVMNodeSwitch {
             this.webview.postMessage('node-recommend', '', version);
         }
         else if (sectionId === 'nvm-v') {
-            this.nvmV = await commandHandlers.handleNvmVersion();
-            this.webview.postMessage('nvm-v', '', this.nvmV);
+            const { nvmV, error } = await commandHandlers.handleNvmVersion();
+            this.nvmV = nvmV;
+            this.webview.postMessage('nvm-v', '', this.nvmV,error);
             if (!this.nvmV) { await commandHandlers.handleNvmNoV(this.platform, this.getT.bind(this)); }
         }
 

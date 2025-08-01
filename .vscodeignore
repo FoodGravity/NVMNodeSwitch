@@ -4,6 +4,7 @@ out/**
 node_modules/**
 src/**
 其他/**
+web/**
 .gitignore
 .yarnrc
 esbuild.js

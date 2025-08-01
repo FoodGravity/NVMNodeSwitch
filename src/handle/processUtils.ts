@@ -1,5 +1,5 @@
-import { ChildProcess, spawn } from 'child_process';
-import { decodeOutput } from './encodingUtils';
+import { spawn } from 'child_process';
+// import { decodeOutput } from './encodingUtils';
 
 /** 执行命令并返回输出结果 */
 export async function localExecuteCommand(command: string) {
@@ -10,14 +10,14 @@ export async function localExecuteCommand(command: string) {
     });
 
     let output = '';
-    let errorOutput = '';
+    let error = '';
 
     child.stdout?.on('data', (data: Buffer) => {
-        output += decodeOutput(data);
+        output += data.toString();
     });
 
     child.stderr?.on('data', (data: Buffer) => {
-        errorOutput += decodeOutput(data);
+        error += data.toString();
     });
 
     const exitCode = await new Promise<number>((resolve) => {
@@ -32,12 +32,12 @@ export async function localExecuteCommand(command: string) {
     ];
     const errorPattern = new RegExp(`(${errorKeywords.join('|')})`, 'i');
 
-    if ((exitCode !== 0 && !errorOutput) || errorPattern.test(output)) {
-        errorOutput = output;
+    if ((exitCode !== 0 && !error) || errorPattern.test(output)) {
+        error = output;
         output = '';
     }
     return {
         output,
-        errorOutput,
+        error,
     };
 }
