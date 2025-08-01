@@ -302,7 +302,7 @@ function isValidVersion(version) {
 // 页面加载完成后绑定事件并初始化页面渲染
 // 在 initializePage 函数中添加以下代码
 function initializePage() {
-    console.log('页面初始化开始');
+    log('页面初始化开始');
     createNvmVSettingButton();
     createAllRefreshButtons();
 
@@ -317,7 +317,7 @@ function initializePage() {
     versionInput.addEventListener('input', () => {
         const version = versionInput.value;
         const validVersion = isValidVersion(version);
-        console.log('读取的版本号：', version, '转换的版本号:', validVersion);
+        log('读取的版本号：', version, '转换的版本号:', validVersion);
         if (validVersion === version && version) {
             updateButtonState(manualInstallBtn, 'installed', 'download');
             versionInput.className = 'uni-btn notInstalled';

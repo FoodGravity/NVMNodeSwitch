@@ -16,17 +16,15 @@ export class NVMNodeSwitch {
     public bottomBar: BottomBar;
     private languagePack: { [key: string]: string } = {};
     public log(message: string): void {
-        if (this.outputChannel) {
-            this.outputChannel.appendLine(message);
-        }
+        if (this.outputChannel) { this.outputChannel.appendLine(message); }
     }
     constructor(context: vscode.ExtensionContext) {
         this.context = context;
-        if (context.extensionMode === vscode.ExtensionMode.Development) {
-        this.outputChannel = vscode.window.createOutputChannel('NVMNode版本切换');
-        }
         this.bottomBar = new BottomBar(this);
         this.webview = new Webview(this);
+        if (context.extensionMode === vscode.ExtensionMode.Development) {
+            this.outputChannel = vscode.window.createOutputChannel('NVMNode版本切换');
+        }
         // 确保 languagePack 在构造函数中初始化
         this.languagePack = this.getLanguagePack() || {};
         this.context.subscriptions.push(this.bottomBar, this.webview);
@@ -72,6 +70,7 @@ export class NVMNodeSwitch {
 
     //初始打开时依次执行命令函数
     private async initialCommand() {
+        this.webview.postMessage('isdev', '', !!this.outputChannel);
         await this.executeCommand('node-v');
         // await this.executeCommand('node-recommend');
         await this.executeCommand('nvm-v');

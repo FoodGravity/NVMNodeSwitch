@@ -1,17 +1,28 @@
 // 获取VSCode API
 const vscode = acquireVsCodeApi();
 let t = {};
+let isdev = false;
+function log(...args) {//可以接收多个消息
+    if (isdev) { console.log(...args); }
+}
+
+
 // 获取数据的主要方法
 function getData(sectionId, params) {
-    console.log('发送命令', { sectionId, params });
+    log('发送命令', { sectionId, params });
     vscode.postMessage({ sectionId, params });
 
 }
 
 // 独特渲染监听消息
 window.addEventListener('message', async (event) => {
-    console.log('收到消息', event.data);
     const { sectionId, params, data, error } = event.data;
+
+    if (sectionId === 'isdev') { isdev = data; return; }
+
+    log('收到消息', event.data);
+
+
     if (sectionId === 'get-setting') {
         if (params?.setting) {
             createSettingsContainer(data, params);
@@ -84,7 +95,7 @@ function applyLanguagePack() {
         const key = el.getAttribute('data-locale');
         const addText = el.getAttribute('addText') || '';
         setT(el, key, addText);
-        
+
         // 新增：处理input元素的placeholder
         if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
             const translated = t[key] || key;

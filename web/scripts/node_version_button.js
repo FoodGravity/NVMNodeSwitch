@@ -25,7 +25,7 @@ function createButtonComponent(text, state, inTable) {
             getData(command, button.getAttribute('data'));
 
         } else {
-            console.log('未触发命令');
+            log('未触发命令');
         }
     });
     return button;
@@ -61,7 +61,7 @@ function updateButtonState(button, state, iconState) {
 
 // 恢复所有当前状态的按钮为installed
 function resetCurrentButtons() {
-    console.log('恢复所有当前按钮为installed');
+    log('恢复所有当前按钮为installed');
     const allCurrentButtons = document.querySelectorAll('.uni-btn.current,.uni-btn.table.current');
     allCurrentButtons.forEach(button => {
         updateButtonState(button, 'installed');
@@ -69,7 +69,7 @@ function resetCurrentButtons() {
 }
 //设置指定版本的按钮状态
 function setVersionButtonState(version, state, iconState) {
-    console.log('设置版本按钮状态:', version, state);
+    log('设置版本按钮状态:', version, state);
     const versionButtons = document.querySelectorAll(`.uni-btn[data="${version}"]`);
     versionButtons.forEach(button => {
         updateButtonState(button, state, iconState);
@@ -87,7 +87,7 @@ function setVersionButtonState(version, state, iconState) {
 }
 //移除指定版本的非table按钮
 function removeNonTableVersionButtons(version) {
-    console.log('移除非table版本按钮:', version);
+    log('移除非table版本按钮:', version);
     const versionButtons = document.querySelectorAll(`.uni-btn[data="${version}"]`);
     versionButtons.forEach(button => {
         if (!button.classList.contains('table')) {
