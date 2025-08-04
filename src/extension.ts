@@ -127,8 +127,7 @@ export class NVMNodeSwitch {
 
         /**以下处理版块 */
         if (sectionId === 'node-v') {
-            const result = await commandHandlers.handleNodeVersion();
-            this.nodeV = commandHandlers.extractVersion(result);
+            this.nodeV = await commandHandlers.handleNodeVersion();
             this.bottomBar.updateNodeVStatus(this.nodeV);
             this.webview.postMessage('node-v', '', this.nodeV);
         }
