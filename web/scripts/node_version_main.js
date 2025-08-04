@@ -1,4 +1,3 @@
-// 公共变量
 function renderNodeV(nodeV) {
     const section = document.getElementById('node-v');
     if (section) {
@@ -43,7 +42,8 @@ function renderNvmrcCheck(state, version) {
     const sectionId = 'nvmrc-check';
     // setLoadingState(sectionId);
     const tooltip = document.getElementById(sectionId).querySelector(`.content-container`);
-
+    const createNvmrcBtn = document.getElementById('create-nvmrc-btn');
+    createNvmrcBtn.style.display = 'none';
     if (state === 'success') {
         setT(tooltip, version);
         tooltip.className = `content-container segmentation success-color`;
@@ -62,13 +62,26 @@ function renderNvmrcCheck(state, version) {
         tooltip.className = `content-container segmentation error-color`;
     } else if (state === 'not-found') {
         setT(tooltip, 'nvmrc未找到');
+        createNvmrcBtn.style.display = 'flex';
         tooltip.className = `content-container segmentation warning-color`;
     }
 
     setLoadingState(sectionId, false);
 }
+document.getElementById('create-nvmrc-btn').addEventListener('click', function () {
+    const tooltip = document.getElementById('nvmrc-check').querySelector(`.content-container`);
+    setT(tooltip, '看右下角消息提醒');
+    getData('update-nvmrc', '跳过检查');
+    // 清除之前的定时器
+    if (this._nvmrcTimer) {
+        clearTimeout(this._nvmrcTimer);
+    }
 
-
+    // 设置新的定时器并存储在按钮上
+    this._nvmrcTimer = setTimeout(() => {
+        setT(tooltip, 'nvmrc未找到');
+    }, 3000);
+});
 // 2. 渲染已安装版本列表
 function renderNvmList(result) {
     const sectionId = 'nvm-list';

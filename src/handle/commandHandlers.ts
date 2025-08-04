@@ -26,10 +26,12 @@ export async function handleNodeVersion() {
 //处理NVM版本
 export async function handleNvmVersion() {
     const { output, error } = await localExecuteCommand('nvm v');
-    return { nvmV:extractVersion(output), error };
+    return { nvmV: extractVersion(output), error };
 }
 //处理NVM未安装或未正确配置的情况
-export async function handleNvmNoV(platform: string, getT: getTFunc) {
+export async function handleNvmNoV(getT: getTFunc) {
+    const platform = process.platform === 'win32' ? 'win' :
+        process.platform === 'darwin' ? 'mac' : 'linux';
     const selection = await vscode.window.showErrorMessage(
         getT('NVM未安装'),
         platform === 'win' ? getT('跳转安装NVM') : getT('安装'),
@@ -42,7 +44,7 @@ export async function handleNvmNoV(platform: string, getT: getTFunc) {
             const terminal = vscode.window.createTerminal(getT('NVM安装'));
             terminal.show();
             terminal.sendText('curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash');
-            vscode.window.showInformationMessage(`${getT('安装完成后请重启终端:')} source ~/.bashrc`);
+            vscode.window.showInformationMessage(getT('安装完成后请重启终端'));
         }
     }
 }
@@ -70,7 +72,7 @@ export function handleUpdateNvmrc(version: string) {
     return extractVersion(fileContent);
 }
 //处理是否是一个项目目录
-export async function IsProjectCreateNvmrc(getT: getTFunc) {
+export async function createNvmrcOrNot(getT: getTFunc) {
     const workspaceRoot = getWorkspaceRoot();
     if (!workspaceRoot) { return false; }
     // 检查是否是项目目录

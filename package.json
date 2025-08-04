@@ -2,7 +2,7 @@
   "name": "nvm-node-switch",
   "displayName": "NVM Node Switch",
   "description": "Auto-switch Node versions on .nvmrc or manually install new node\n基于.nvmrc自动切换Node或手动安装新版本",
-  "version": "0.0.48",
+  "version": "0.0.50",
   "icon": "icon.png",
   "publisher": "FoodGravity",
   "repository": {

@@ -43,7 +43,7 @@ export class NVMNodeSwitch {
                 this.log(`VS Code 窗口状态变化: ${state.focused ? '活跃' : '非活跃'}`);
                 if (state.focused) {
                     await this.executeCommand('node-v');
-                    await this.executeCommand('nvmrc-check');
+                    await this.executeCommand('nvmrc-check', '不提醒');
                     // 获取当前工作区路径
                     const workspaceFolders = vscode.workspace.workspaceFolders;
                     if (workspaceFolders) {
@@ -63,7 +63,6 @@ export class NVMNodeSwitch {
         this.initialCommand();
     }
     // 公共变量
-    public platform = 'win';
     public nvmV = '';
     public nodeV = '';
     public insList: string[] = [];
@@ -138,8 +137,8 @@ export class NVMNodeSwitch {
         else if (sectionId === 'nvm-v') {
             const { nvmV, error } = await commandHandlers.handleNvmVersion();
             this.nvmV = nvmV;
-            this.webview.postMessage('nvm-v', '', this.nvmV,error);
-            if (!this.nvmV) { await commandHandlers.handleNvmNoV(this.platform, this.getT.bind(this)); }
+            this.webview.postMessage('nvm-v', '', this.nvmV, error);
+            if (!this.nvmV) { await commandHandlers.handleNvmNoV(this.getT.bind(this)); }
         }
 
         /**以下命令依赖nvm版本 */
@@ -161,7 +160,7 @@ export class NVMNodeSwitch {
             // 未检测到 .nvmrc，直接写入当前 nodeV 并返回
             if (!found || !version) {
                 if (!found) { this.webview.postMessage('nvmrc-check', 'not-found', this.nodeV); }
-                this.executeCommand('update-nvmrc');
+                this.executeCommand('update-nvmrc', params);
                 return;
             }
             // .nvmrc 版本已是当前 nodeV
@@ -190,13 +189,13 @@ export class NVMNodeSwitch {
             }
         }
         else if (sectionId === 'update-nvmrc') {
-            await this.executeCommand('node-v');
+            if (params !== '跳过检查') await this.executeCommand('node-v');
             if (!this.nodeV) {
                 this.webview.postMessage('nvmrc-check', 'nodeInvalid', this.nodeV);
                 return;
             }
             const { found } = commandHandlers.handleCheckNvmrc();
-            if (found || (await commandHandlers.IsProjectCreateNvmrc(this.getT.bind(this)))) {
+            if (found || (params !== '不提醒' && await commandHandlers.createNvmrcOrNot(this.getT.bind(this)))) {
                 commandHandlers.handleUpdateNvmrc(this.nodeV);
                 this.webview.postMessage('nvmrc-check', 'success', this.nodeV);
             }
