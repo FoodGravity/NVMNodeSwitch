@@ -28,14 +28,16 @@ export class NVMNodeSwitch {
         // 确保 languagePack 在构造函数中初始化
         this.languagePack = this.getLanguagePack() || {};
         this.context.subscriptions.push(this.bottomBar, this.webview);
-
-
         this.context.subscriptions.push(
             // 配置文件变化监听
             vscode.workspace.onDidChangeConfiguration(e => {
-                if (e.affectsConfiguration('nvmNodeSwitch.language')) {
-                    this.languagePack = this.getLanguagePack();
-                    this.executeCommand('get-languagePack');
+                if (e.affectsConfiguration('nvmNodeSwitch')) {
+                    // 更新语言包
+                    if (e.affectsConfiguration('nvmNodeSwitch.language')) {
+                        this.languagePack = this.getLanguagePack();
+                    }
+                    // 通知webview所有设置变更
+                    this.executeCommand('get-setting', { setting: true, isConfigChange: true });
                 }
             }),
             // 添加窗口状态监听
@@ -75,7 +77,12 @@ export class NVMNodeSwitch {
         await this.executeCommand('nvm-v');
         if (this.nvmV) {
             await this.executeCommand('nvm-list');
-            await this.executeCommand('nvmrc-check');
+            // 添加配置检查
+            const config = vscode.workspace.getConfiguration('nvmNodeSwitch');
+            const shouldPrompt = config.get<boolean>('promptCreateNvmrc', true);
+
+            await this.executeCommand('nvmrc-check', shouldPrompt ? '提醒' : '不提醒');
+
             if (this.webview.view) {
                 await this.executeCommand('nvm-list-available');
             }
@@ -103,7 +110,7 @@ export class NVMNodeSwitch {
                     : config.get(settingKey);
             }
             if (params?.reset) { this.executeCommand('update-setting', settings); }
-            else { this.webview.postMessage('get-setting', params, settings); }
+            else { this.webview.postMessage(sectionId, params, settings); }
             return;
         }
         else if (sectionId === 'update-setting') {
@@ -112,12 +119,12 @@ export class NVMNodeSwitch {
             for (const key in params) {
                 await config.update(key, params[key], vscode.ConfigurationTarget.Global);
             }
-            this.webview.postMessage('update-setting', '', true);
+            this.webview.postMessage(sectionId, '', true);
             this.executeCommand('get-setting', { setting: true });
             return;
         } else if (sectionId === 'get-languagePack') {
             const languagePack = this.languagePack || this.getLanguagePack();
-            this.webview.postMessage('get-languagePack', '', languagePack);
+            this.webview.postMessage(sectionId, '', languagePack);
             return;
         }
 
@@ -128,16 +135,16 @@ export class NVMNodeSwitch {
         if (sectionId === 'node-v') {
             this.nodeV = await commandHandlers.handleNodeVersion();
             this.bottomBar.updateNodeVStatus(this.nodeV);
-            this.webview.postMessage('node-v', '', this.nodeV);
+            this.webview.postMessage(sectionId, '', this.nodeV);
         }
         else if (sectionId === 'node-recommend') {
             const version = await commandHandlers.handleEngineRecommendation();
-            this.webview.postMessage('node-recommend', '', version);
+            this.webview.postMessage(sectionId, '', version);
         }
         else if (sectionId === 'nvm-v') {
             const { nvmV, error } = await commandHandlers.handleNvmVersion();
             this.nvmV = nvmV;
-            this.webview.postMessage('nvm-v', '', this.nvmV, error);
+            this.webview.postMessage(sectionId, '', this.nvmV, error);
             if (!this.nvmV) { await commandHandlers.handleNvmNoV(this.getT.bind(this)); }
         }
 
@@ -148,36 +155,36 @@ export class NVMNodeSwitch {
             const result = await commandHandlers.handleInsList();
             if (result.currentVersion !== this.nodeV) { await this.executeCommand('node-v'); }
             this.insList = result.versions;
-            this.webview.postMessage('nvm-list', params, result);
+            this.webview.postMessage(sectionId, params, result);
         }
         else if (sectionId === 'nvm-list-available') {
             const av = await commandHandlers.handleAvList(params);
             const data = { avList: av, nodeV: this.nodeV, insList: this.insList };
-            this.webview.postMessage('nvm-list-available', '', data);
+            this.webview.postMessage(sectionId, '', data);
         }
         else if (sectionId === 'nvmrc-check') {
             const { found, version } = commandHandlers.handleCheckNvmrc();
             // 未检测到 .nvmrc，直接写入当前 nodeV 并返回
             if (!found || !version) {
-                if (!found) { this.webview.postMessage('nvmrc-check', 'not-found', this.nodeV); }
+                if (!found) { this.webview.postMessage(sectionId, 'not-found', this.nodeV); }
                 this.executeCommand('update-nvmrc', params);
                 return;
             }
             // .nvmrc 版本已是当前 nodeV
             if (version === this.nodeV) {
-                this.webview.postMessage('nvmrc-check', 'success', this.nodeV);
+                this.webview.postMessage(sectionId, 'success', this.nodeV);
                 return;
             }
             // 已安装该版本，尝试切换
             if (this.insList.includes(version)) {
-                this.webview.postMessage('nvmrc-check', 'use', version);
+                this.webview.postMessage(sectionId, 'use', version);
                 await this.executeCommand('nvm-use', version);
                 if (version !== this.nodeV) {
-                    this.webview.postMessage('nvmrc-check', 'use-fail', version);
+                    this.webview.postMessage(sectionId, 'use-fail', version);
                 }
             } else {
                 // 未安装该版本，提示安装
-                this.webview.postMessage('nvmrc-check', 'install', version);
+                this.webview.postMessage(sectionId, 'install', version);
                 const installNow = await vscode.window.showInformationMessage(
                     `Node ${version} ${this.getT('未安装，是否立即安装？')}`,
                     this.getT('安装'),
@@ -204,18 +211,18 @@ export class NVMNodeSwitch {
         /**以下都是按钮*/
         else if (sectionId === 'nvm-use') {
             const success = await commandHandlers.handleInstallAndUse('use', params, this.getT.bind(this));
-            this.webview.postMessage('nvm-use', params, success ? 'current' : 'error');
+            this.webview.postMessage(sectionId, params, success ? 'current' : 'error');
             if (success) { this.executeCommand('update-nvmrc'); }
         }
         else if (sectionId === 'nvm-install') {
             const success = await commandHandlers.handleInstallAndUse('install', params, this.getT.bind(this));
-            if (!success) { this.webview.postMessage('nvm-install', params, 'error'); return; }
+            if (!success) { this.webview.postMessage(sectionId, params, 'error'); return; }
 
             await this.executeCommand('nvm-list', 'noClear');
-            this.webview.postMessage('nvm-install', params, 'success');
+            this.webview.postMessage(sectionId, params, 'success');
             // 设置3秒后发送installed的计时器
             const timer = setTimeout(() => {
-                this.webview.postMessage('nvm-install', params, 'installed');
+                this.webview.postMessage(sectionId, params, 'installed');
             }, 2500);
             // 安装成功后询问是否立即切换
             const useNow = await vscode.window.showInformationMessage(
@@ -227,18 +234,18 @@ export class NVMNodeSwitch {
             if (useNow === this.getT('确定')) {
                 this.executeCommand('nvm-use', params);
             } else {
-                this.webview.postMessage('nvm-install', params, 'installed');
+                this.webview.postMessage(sectionId, params, 'installed');
             }
 
         }
         else if (sectionId === 'nvm-uninstall') {
             const yes = await commandHandlers.handleConfirmDelete(params, this.getT.bind(this));
             if (!yes) {
-                this.webview.postMessage('nvm-uninstall', params, 'cancelled');
+                this.webview.postMessage(sectionId, params, 'cancelled');
                 return;
             }
             const success = await commandHandlers.handleDeleteVersion(params, this.getT.bind(this));
-            this.webview.postMessage('nvm-uninstall', params, success ? 'success' : 'error');
+            this.webview.postMessage(sectionId, params, success ? 'success' : 'error');
             if (success) { await this.executeCommand('nvm-list', 'noClear'); }
         }
     }

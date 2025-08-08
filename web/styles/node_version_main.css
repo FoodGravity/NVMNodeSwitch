@@ -124,3 +124,46 @@ a:hover {
 .warning-color {
     color: var(--vscode-testing-iconQueued);
 }
+
+
+/* 复选框样式 - 匹配VSCode风格 */
+input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 24px;
+    height: 24px;
+    margin: 0;
+    border: 1px solid var(--vscode-checkbox-border);
+    border-radius: 3px;
+    background-color: var(--vscode-checkbox-background);
+    cursor: pointer;
+    position: relative;
+    vertical-align: middle;
+}
+
+input[type="checkbox"]:checked {
+    background-color: var(--vscode-checkbox-background);
+    border-color: var(--vscode-checkbox-border);
+}
+
+input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    left: 8px;
+    top: 4px;
+    width: 4px;
+    height: 10px;
+    border: solid var(--vscode-checkbox-foreground);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+input[type="checkbox"]:focus {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+}
+
+input[type="checkbox"]:hover {
+    background-color: var(--vscode-checkbox-background);
+    border-color: var(--vscode-checkbox-border);
+}

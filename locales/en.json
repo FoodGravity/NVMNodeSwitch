@@ -50,5 +50,6 @@
     "创建": "Create",
     "不创建": "Do not create",
     "输入版本号安装": "Enter version to install",
-    "看右下角消息提醒": "Check bottom-right messages"
+    "看右下角消息提醒": "Check bottom-right messages",
+    "打开新窗口时是否提示创建.nvmrc文件": "Prompt to create .nvmrc when opening new window"
 }

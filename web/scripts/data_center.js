@@ -24,10 +24,21 @@ window.addEventListener('message', async (event) => {
 
 
     if (sectionId === 'get-setting') {
-        if (params?.setting) {
-            createSettingsContainer(data, params);
+        // 区分消息来源
+        if (params?.isConfigChange) {
+            // 来自 extension.ts 的配置变更消息
+            const settingsContainer = document.getElementById('settings-container');
+            if (settingsContainer) {
+                // 如果设置页面已打开，更新现有容器
+                createSettingsContainer(data);
+            }
         } else {
-            updateVersionSource(data);
+            // 来自 node_version_main.js 的主动设置消息
+            if (params?.setting) {
+                createSettingsContainer(data);
+            } else {
+                updateVersionSource(data);
+            }
         }
         return;
     } else if (sectionId === 'get-languagePack') {

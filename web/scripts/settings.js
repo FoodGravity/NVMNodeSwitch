@@ -46,6 +46,34 @@ function createSettingsContainer(data) {
     title.style.textAlign = 'center';
     container.appendChild(title);
 
+
+    // 创建提示设置部分
+    const promptSection = document.createElement('div');
+    promptSection.className = 'section';
+
+    const promptTitleBar = document.createElement('div');
+    promptTitleBar.className = 'title-bar';
+
+    const promptTitleDiv = document.createElement('div');
+    promptTitleDiv.classList.add('segmentation');
+    setT(promptTitleDiv, '打开新窗口时是否提示创建.nvmrc文件');
+    promptTitleBar.appendChild(promptTitleDiv);
+
+    const promptCheckbox = document.createElement('input');
+    promptCheckbox.type = 'checkbox';
+    promptCheckbox.id = 'prompt-nvmrc-checkbox';
+    promptCheckbox.checked = data.promptCreateNvmrc !== false;
+    promptTitleBar.appendChild(promptCheckbox);
+
+    promptSection.appendChild(promptTitleBar);
+    container.appendChild(promptSection);
+
+    // 监听变化
+    promptCheckbox.addEventListener('change', function () {
+        newData.promptCreateNvmrc = this.checked;
+        checkSettingsChanged();
+    });
+
     // 创建语言设置部分
     const languageSection = document.createElement('div');
     languageSection.className = 'section';
@@ -170,12 +198,16 @@ function createSettingsContainer(data) {
         // 比较来源设置
         const sourcesChanged = JSON.stringify(newData.sources) !== JSON.stringify(data.sources);
 
-        const isChanged = languageChanged || sourcesChanged;
+        // 比较初始提示设置
+        const promptChanged = newData.promptCreateNvmrc !== data.promptCreateNvmrc;
+    
+        const isChanged = languageChanged || sourcesChanged || promptChanged;
+
         // 取消按钮
         cancelButton.className = isChanged ? 'uni-btn table installed' : 'uni-btn table disabled notInstalled';
         cancelButton.disabled = !isChanged;
         // 保存按钮
-        saveButton.className = isChanged ? 'uni-btn table current' : 'uni-btn table disabled notInstalled';
+        saveButton.className = isChanged ? 'uni-btn table installed' : 'uni-btn table disabled notInstalled';
         saveButton.disabled = !isChanged;
     }
 

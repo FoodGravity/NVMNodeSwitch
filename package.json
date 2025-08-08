@@ -2,7 +2,7 @@
   "name": "nvm-node-switch",
   "displayName": "NVM Node Switch",
   "description": "Auto-switch Node versions on .nvmrc or manually install new node\n基于.nvmrc自动切换Node或手动安装新版本",
-  "version": "0.0.50",
+  "version": "0.0.52",
   "icon": "icon.png",
   "publisher": "FoodGravity",
   "repository": {
@@ -56,6 +56,11 @@
               }
             }
           }
+        },
+        "nvmNodeSwitch.promptCreateNvmrc": {
+          "type": "boolean",
+          "default": true,
+          "description": "控制打开新窗口时是否提示创建.nvmrc文件；Control whether prompt to create. nvmrc file when opening a new window"
         }
       }
     },
